@@ -1,0 +1,250 @@
+apply plugin: 'com.android.library'
+apply plugin: 'maven'
+
+archivesBaseName = 'magnet-max-android-sdk'
+version = "2.0.0"
+group = "com.magnet.max.android"
+
+repositories {
+  mavenLocal()
+  maven {
+    url "http://dev-repo.magnet.com:8081/artifactory/libs-snapshot-local"
+    credentials {
+      username = "${devUser}"
+      password = "${devPassword}"
+    }
+  }
+
+  maven {
+    url "http://dev-repo.magnet.com:8081/artifactory/everything"
+    credentials {
+      username = "${devEverythingUser}"
+      password = "${devEverythingPassword}"
+    }
+  }
+
+  maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+}
+
+android {
+  compileSdkVersion 22
+  buildToolsVersion "22.0.1"
+
+  defaultConfig {
+    minSdkVersion 16
+    targetSdkVersion 22
+    versionCode 1
+    versionName "1.0"
+  }
+  buildTypes {
+    release {
+      minifyEnabled false
+      proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+    }
+  }
+
+  lintOptions {
+    abortOnError false
+  }
+
+}
+
+dependencies {
+  compile fileTree(dir: 'libs', include: ['*.jar'])
+  testCompile 'junit:junit:4.12'
+
+  compile ('com.magnet.max.android:magnet-max-android-core:2.0.0-SNAPSHOT') {
+    transitive=true
+  }
+
+  compile('com.magnet.mmx:magnet-mmx-client-android:2.0.0-SNAPSHOT@aar') {
+    transitive = true
+  }
+}
+
+//---------javadoc-----------
+
+configurations {
+  provided
+  jaxDoclet
+}
+
+dependencies {
+  // for javadoc generation
+  jaxDoclet 'com.google.doclava:doclava:1.0.6'
+}
+
+sourceSets {
+  main {
+    compileClasspath += configurations.provided
+    runtimeClasspath += configurations.provided
+  }
+  // this is for the test to compile if it needs jars from provided scope
+  test {
+    compileClasspath += configurations.provided
+    runtimeClasspath += configurations.provided
+  }
+}
+
+def javadocSource = [sourceSets.main.allJava, 'src/main/java']
+
+task androidJavadocs(type: Javadoc) {
+  println "generating JAVADOCS task:"
+  println System.getenv('JAVA_HOME')
+  source = javadocSource
+  destinationDir = reporting.file("$projectDir/build/docs")
+  title = null
+  options.docletpath = configurations.jaxDoclet.files.asType(List)
+  options.doclet = "com.google.doclava.Doclava"
+  ext.androidJar = "${System.env.ANDROID_HOME}/platforms/${android.compileSdkVersion}/android.jar"
+  ext.googlePlayServicesJar = "${System.env.ANDROID_HOME}/extras/google/google_play_services/libproject/google-play-services_lib/libs/google-play-services.jar"
+  ext.androidSupportV4Jar = "${System.env.ANDROID_HOME}/extras/android/support/v4/android-support-v4.jar"
+  classpath = files("$buildDir/intermediates/classes/debug") + files(ext.androidJar) + files(ext.googlePlayServicesJar) + files(ext.androidSupportV4Jar) + sourceSets.main.compileClasspath
+
+  options {
+    doclet "com.google.doclava.Doclava"
+    addStringOption "hdf project.name", "Magnet Max Android SDK"
+    //        addStringOption "templatedir", "$projectDir" //for pointing to the template when we have one
+    addStringOption "federate android", "http://d.android.com/reference"
+    addStringOption "federationxml android", "http://doclava.googlecode.com/svn/static/api/android-10.xml"
+    addStringOption 'XDignore.symbol.file', '-quiet'
+  }
+
+  // ADD PUBLIC APIS for JavaDoc here
+  include '**/Max.java'
+}
+
+task sourcesJar(type: Jar) {
+  from android.sourceSets.main.java.srcDirs
+  classifier = 'sources'
+}
+
+task androidJavadocsZip(type: Zip, dependsOn: androidJavadocs) {
+  classifier = 'javadoc'
+  from "$projectDir/build/docs"
+}
+
+task androidJavadocsJar(type: Jar, dependsOn: androidJavadocs) {
+  classifier = 'javadoc'
+  from "$projectDir/build/docs"
+}
+
+task makeZips {
+
+  doLast {
+    file("$projectDir/build/libproject/${version}").delete()
+    file("$projectDir/build/libproject/${version}").mkdirs()
+    copy {
+      from "$projectDir/build/intermediates/bundles"
+      into "$projectDir/build/libproject/${version}"
+    }
+    List configs = ["debug", "release"]
+    for (String config : configs) {
+
+      // make libs directory for all required jars
+      file("$projectDir/build/libproject/${version}/$config/libs").mkdir()
+
+      // make src directory for ant builds
+      file("$projectDir/build/libproject/${version}/$config/src").mkdir()
+
+      // copy runtime dependencies
+      copy {
+        from configurations.runtime
+        into "$projectDir/build/libproject/${version}/$config/libs"
+        exclude 'play-services**'
+        exclude 'support-v4**'
+      }
+
+      copy {
+        from "$projectDir/build.xml", "$projectDir/project.properties.lib"
+        into "$projectDir/build/libproject/${version}/$config"
+      }
+      file("$projectDir/build/libproject/${version}/$config/project.properties.lib").renameTo("$projectDir/build/libproject/${version}/$config/project.properties");
+
+    }
+
+    copy {
+      from "$projectDir/build/intermediates/bundles/debug/"
+      into "$projectDir/build/libproject/${version}/debug/libs/"
+      include("classes.jar")
+      rename("classes.jar", "${archivesBaseName}-${version}-debug.jar")
+    }
+
+    copy {
+      from "$projectDir/build/intermediates/bundles/release/"
+      into "$projectDir/build/libproject/${version}/release/libs"
+      include("classes.jar")
+      rename("classes.jar", "${archivesBaseName}-${version}.jar")
+    }
+
+    file("$projectDir/build/libproject/${version}/debug/classes.jar").delete()
+
+    file("$projectDir/build/libproject/${version}/release/classes.jar").delete()
+
+    makeLibZipDebug.execute()
+    makeLibZipRelease.execute()
+  }
+}
+
+task makeLibZipDebug(type: Zip) {
+  from "$project.buildDir/libproject/${version}/debug"
+  includeEmptyDirs true
+  classifier "debug"
+  baseName "${archivesBaseName}"
+  into "magnetlib/magnetlib-${version}"
+}
+
+task makeLibZipRelease(type: Zip) {
+  from "$project.buildDir/libproject/${version}/release"
+  includeEmptyDirs true
+  classifier ""
+  baseName "${archivesBaseName}"
+  into "magnetlib/magnetlib-${version}"
+}
+
+assemble.dependsOn makeZips
+
+//--------------artifactory deployment--------------
+
+configurations {
+  deployerJars
+}
+
+dependencies {
+  deployerJars "org.apache.maven.wagon:wagon-http:2.6"
+}
+
+def sdkAarfile = file("${projectDir}/build/outputs/aar/${archivesBaseName}-${version}.aar")
+
+artifacts {
+  archives sdkAarfile
+}
+
+def homeDir = System.getenv('HOME')
+
+task uploadLocal(type: Upload) {
+  configuration = configurations.archives
+  repositories {
+    mavenDeployer {
+      repository(url: mavenLocal().url)
+    }
+  }
+}
+
+task uploadRelease(type: Upload) {
+    configuration = configurations.archives
+    repositories.mavenDeployer {
+        repository(url: "http://dev-repo.magnet.com:8081/artifactory/libs-release-local") {
+            authentication(userName: "${devUser}", password: "${devPassword}")
+        }
+    }
+}
+
+uploadArchives {
+  repositories.mavenDeployer {
+    configuration = configurations.deployerJars
+    snapshotRepository(url: "http://dev-repo.magnet.com:8081/artifactory/libs-snapshot-local") {
+      authentication(userName: "${devUser}", password: "${devPassword}")
+    }
+  }
+}
