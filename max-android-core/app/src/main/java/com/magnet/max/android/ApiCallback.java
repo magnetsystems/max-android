@@ -15,6 +15,10 @@
  */
 package com.magnet.max.android;
 
+/**
+ * This class is used to handle asynchronous API call in Max Android.
+ * @param <T>
+ */
 public interface ApiCallback<T> {
 
   /** Successful response. */
