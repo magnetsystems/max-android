@@ -25,6 +25,9 @@ import com.magnet.max.android.config.MaxAndroidConfig;
  */
 public class Max {
 
+  // Disable default constructor
+  private Max() {}
+
   /**
    * Initialize Magnet Max Android with a Android Context and MagnetAndroidConfig
    * @param context

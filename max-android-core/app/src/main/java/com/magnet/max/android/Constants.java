@@ -16,9 +16,12 @@
 
 package com.magnet.max.android;
 
+/**
+ * This class defines constants used in Max Android SDK
+ */
 public interface Constants {
-  // Local BroadCast intent action for invalid app token
+  /** Local BroadCast intent action for invalid app token */
   String APP_AUTH_CHALLENGE_INTENT_ACTION = "com.magnet.android.APP_AUTH_CHALLENGE";
-  // Local BroadCast intent action for invalid user token
+  /** Local BroadCast intent action for invalid user token */
   String USER_AUTH_CHALLENGE_INTENT_ACTION = "com.magnet.android.USER_AUTH_CHALLENGE";
 }

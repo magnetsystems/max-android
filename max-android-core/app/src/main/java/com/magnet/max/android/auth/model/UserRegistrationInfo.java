@@ -173,11 +173,17 @@ public class UserRegistrationInfo {
       return this;
     }
 
+    /**
+     * The status {@link UserStatus} for the user.
+     */
     public Builder userStatus(UserStatus value) {
       toBuild.userStatus = value;
       return this;
     }
 
+    /**
+     * The username for the user.
+     */
     public Builder userName(String value) {
       toBuild.userName = value;
       return this;

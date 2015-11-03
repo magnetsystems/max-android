@@ -24,15 +24,17 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * An implementation of the {@link MaxAndroidConfig} that reads the config from a properties
- * file.  This file is expected to have the following values:
+ * An implementation of the {@link MaxAndroidConfig} that reads the config from a properties file.
+ * This file is expected to have the following values:
  *
- * <code>
- *   baseUrl=<The base url of the server, in format of <protocol>://<host>:<port>[/path], protocol of the server supports HTTP|HTTPS\WS|WSS>
- *   client_id=<App client ID>
- *   client_secret=<App client Secret>
- * </code>
- *
+ * <P>
+ * <pre>
+ *  {@literal
+ *    baseUrl=<The base url of the server, in format of <protocol>://<host>:<port>[/path], protocol of the server supports HTTP|HTTPS>
+ *    client_id=<App client ID>
+ *    client_secret=<App client Secret>
+ *   }
+ * </pre>
  */
 public class MaxAndroidPropertiesConfig implements MaxAndroidConfig {
 
