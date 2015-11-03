@@ -47,8 +47,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
   private static TokenLocalStore tokenLocalStore;
 
-  private static BroadcastReceiver mMessageReceiver;
-
   public static synchronized void init() {
     Log.i(TAG, "-----------ModuleManager init");
 
@@ -80,27 +78,6 @@ import java.util.concurrent.atomic.AtomicReference;
     } else {
       registeredModules.clear();
     }
-
-    if(null == mMessageReceiver) {
-      mMessageReceiver = new BroadcastReceiver() {
-        @Override public void onReceive(Context context, Intent intent) {
-          if (null != userTokenRef.get()) {
-            String token = intent.getStringExtra(Constants.AUTH_FAILURE_INTENT_DATA_TOKEN);
-            if (StringUtil.isStringValueEqual(token, userTokenRef.get().getAccessToken())) {
-              Log.w(TAG, "Auth failed, notify user logout");
-              onUserLogout(userIdRef.get());
-            } else {
-              Log.w(TAG, "Auth failed, it's app token");
-            }
-          } else {
-            Log.w(TAG, "Auth failed, user hasn't login");
-          }
-        }
-      };
-
-      LocalBroadcastManager.getInstance(MaxCore.getApplicationContext()).registerReceiver(
-          mMessageReceiver, new IntentFilter(Constants.AUTH_FAILURE_INTENT_ACTION));
-    }
   }
 
   public static synchronized void register(MaxModule module, ApiCallback<Boolean> callback) {
@@ -128,7 +105,8 @@ import java.util.concurrent.atomic.AtomicReference;
     if(appTokenRef.get() != null) {
       Log.d(TAG, "--------appToken is availabe when register : " + appTokenRef.get());
       module.onInit(MaxCore.getApplicationContext(), configMap, callback);
-      module.onAppTokenUpdate(appTokenRef.get().getAccessToken(), appTokenRef.get().getMmxAppId(), Device.getCurrentDeviceId());
+      module.onAppTokenUpdate(appTokenRef.get().getAccessToken(), appTokenRef.get().getMmxAppId(),
+          Device.getCurrentDeviceId());
     }
     if(userTokenRef.get() != null) {
       Log.d(TAG, "--------userToken is availabe when register : " + userTokenRef.get());
@@ -230,6 +208,36 @@ import java.util.concurrent.atomic.AtomicReference;
     notifyInvalidUserTokenObservers();
 
     tokenLocalStore.saveUserToken();
+  }
+
+  public static void onTokenInvalid(String token) {
+    if (null != userTokenRef.get() && StringUtil.isStringValueEqual(token, userTokenRef.get().getAccessToken())) {
+      Log.w(TAG, "Auth failed, it's user token");
+      onUserTokenInvalid();
+    } else if(null != appTokenRef.get() && StringUtil.isStringValueEqual(token, appTokenRef.get().getAccessToken())) {
+      Log.w(TAG, "Auth failed, it's app token");
+      onAppTokenInvalid();
+    } else {
+      Log.w(TAG, "Auth failed, token doesn't match current user or app token");
+    }
+  }
+
+  public static void onUserTokenInvalid() {
+    Log.w(TAG, "User token is invalid, notify user logout");
+    onUserLogout(userIdRef.get());
+    notifyAuthFailure(Constants.USER_AUTH_CHALLENGE_INTENT_ACTION);
+  }
+
+  public static void onAppTokenInvalid() {
+    notifyAuthFailure(Constants.APP_AUTH_CHALLENGE_INTENT_ACTION);
+  }
+
+  /**
+   * Send local broadcast for authentication challenge
+   * @param action
+   */
+  private static void notifyAuthFailure(String action) {
+    LocalBroadcastManager.getInstance(MaxCore.getApplicationContext()).sendBroadcast(new Intent(action));
   }
 
   private static List<ModuleInfo> getAllRegisteredModules() {

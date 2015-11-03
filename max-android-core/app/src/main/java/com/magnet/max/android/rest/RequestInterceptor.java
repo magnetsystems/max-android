@@ -15,10 +15,7 @@
  */
 package com.magnet.max.android.rest;
 
-import android.content.Intent;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import com.magnet.max.android.Constants;
 import com.magnet.max.android.MaxCore;
 import com.magnet.max.android.auth.AuthTokenProvider;
 import com.magnet.max.android.connectivity.ConnectivityManager;
@@ -118,14 +115,14 @@ public class RequestInterceptor implements Interceptor {
     }
 
     //Save/Update response in cache
-    if(isResponseSuccess(response.code())
+    if(response.isSuccessful()
         && null != options && null != options.getCacheOptions()
         && (options.getCacheOptions().getMaxCacheAge() > 0 || options.getCacheOptions().isAlwaysUseCacheIfOffline())) {
       return cacheManager.cacheResponse(request, response, options.getCacheOptions());
     }
 
     if(401 == response.code()) {
-      notifyAuthFailure(token);
+      MaxCore.tokenInvalid(token, null);
     }
 
     return response;
@@ -145,15 +142,5 @@ public class RequestInterceptor implements Interceptor {
 
     //Log.i(TAG, "---------adding AuthHeaders : " + authToken);
     return StringUtil.isNotEmpty(authToken) ? AuthUtil.generateOAuthToken(authToken) : null;
-  }
-
-  private void notifyAuthFailure(String token) {
-    Intent intent = new Intent(Constants.AUTH_FAILURE_INTENT_ACTION);
-    intent.putExtra(Constants.AUTH_FAILURE_INTENT_DATA_TOKEN, token);
-    LocalBroadcastManager.getInstance(MaxCore.getApplicationContext()).sendBroadcast(intent);
-  }
-
-  private boolean isResponseSuccess(int code) {
-    return code >=200 && code < 300;
   }
 }

@@ -17,6 +17,8 @@
 package com.magnet.max.android;
 
 public interface Constants {
-  String AUTH_FAILURE_INTENT_ACTION = "com.magnet.AUTH_FAILURE";
-  String AUTH_FAILURE_INTENT_DATA_TOKEN = "token";
+  // Local BroadCast intent action for invalid app token
+  String APP_AUTH_CHALLENGE_INTENT_ACTION = "com.magnet.android.APP_AUTH_CHALLENGE";
+  // Local BroadCast intent action for invalid user token
+  String USER_AUTH_CHALLENGE_INTENT_ACTION = "com.magnet.android.USER_AUTH_CHALLENGE";
 }

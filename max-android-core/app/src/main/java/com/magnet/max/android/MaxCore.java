@@ -124,6 +124,18 @@ final public class MaxCore {
     }
   }
 
+  public static void userTokenInvalid(String token, MaxModule source) {
+    ModuleManager.onUserTokenInvalid();
+  }
+
+  public static void appTokenInvalid(String token, MaxModule source) {
+    ModuleManager.onAppTokenInvalid();
+  }
+
+  public static void tokenInvalid(String token, MaxModule source) {
+    ModuleManager.onTokenInvalid(token);
+  }
+
   /**
    * Create a instance of remote service
    * @param service
