@@ -116,7 +116,7 @@ public class UserRegistrationInfo {
   }
 
   /**
-   * Builder to build a ${link UserRegistrationInfo}
+   * Builder to build a {@link UserRegistrationInfo}
    **/
   public static class Builder {
     private UserRegistrationInfo toBuild = new UserRegistrationInfo();
