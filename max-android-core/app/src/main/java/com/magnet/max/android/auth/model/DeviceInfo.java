@@ -21,6 +21,9 @@ import com.magnet.max.android.MaxCore;
 import com.magnet.max.android.User;
 import com.magnet.max.android.util.DeviceUtil;
 
+/**
+ * This class is used to create a device
+ */
 public class DeviceInfo {
   private String[] tags;
   private OsType os;
@@ -97,7 +100,7 @@ public class DeviceInfo {
 
 
   /**
-   * Builder for Device
+   * Builder for {@link DeviceInfo}
    **/
   public static class Builder {
     private DeviceInfo toBuild = new DeviceInfo();
@@ -105,6 +108,10 @@ public class DeviceInfo {
     public Builder() {
     }
 
+    /**
+     * Build a {@link DeviceInfo} object
+     * @return
+     */
     public DeviceInfo build() {
       toBuild.deviceId = DeviceUtil.getDeviceId(MaxCore.getApplicationContext());
       toBuild.os = OsType.ANDROID;

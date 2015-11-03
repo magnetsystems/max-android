@@ -20,8 +20,14 @@
  */
 package com.magnet.max.android.auth.model;
 
+/**
+ * The type of push mechanism
+ */
 public enum PushAuthorityType {
+  /** APNS */
   APNS,
+  /** GCM */
   GCM,
+  /** Other */
   OTHERS
 };
