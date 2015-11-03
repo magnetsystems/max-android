@@ -57,7 +57,7 @@ dependencies {
     transitive=true
   }
 
-  compile('com.magnet.mmx:magnet-mmx-client-android:2.0.0-SNAPSHOT@aar') {
+  compile('com.magnet.mmx:magnet-mmx-client-android:2.0.0@aar') {
     transitive = true
   }
 }
