@@ -20,8 +20,14 @@
  */
 package com.magnet.max.android.auth.model;
 
+/**
+ * The status of user
+ */
 public enum UserStatus {
+  /** Active */
   ACTIVE,
+  /** Created */
   CREATED,
+  /** Inactive */
   INACTIVE
 };

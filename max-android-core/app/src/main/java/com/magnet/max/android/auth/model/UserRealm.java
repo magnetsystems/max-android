@@ -20,12 +20,22 @@
  */
 package com.magnet.max.android.auth.model;
 
+/**
+ * The realm of user
+ */
 public enum UserRealm {
+  /** Active Directory */
   AD,
+  /** Database */
   DB,
+  /** Facebook */
   FACEBOOK,
+  /** Google Plus */
   GOOGLEPLUS,
+  /** LDAP */
   LDAP,
+  /** Other */
   OTHER,
+  /** Twitter */
   TWITTER
 };

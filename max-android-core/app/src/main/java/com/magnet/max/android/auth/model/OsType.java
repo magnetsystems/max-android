@@ -20,9 +20,16 @@
  */
 package com.magnet.max.android.auth.model;
 
+/**
+ * Type of device operating system
+ */
 public enum OsType {
+  /** Android */
   ANDROID,
+  /** iOS */
   IOS,
+  /** Other */
   OTHER,
+  /** Windows */
   WINDOWS
 };
