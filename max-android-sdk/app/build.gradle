@@ -53,11 +53,11 @@ dependencies {
   compile fileTree(dir: 'libs', include: ['*.jar'])
   testCompile 'junit:junit:4.12'
 
-  compile ('com.magnet.max.android:magnet-max-android-core:2.0.5-SNAPSHOT') {
+  compile ('com.magnet.max.android:magnet-max-android-core:2.0.5') {
     transitive=true
   }
 
-  compile('com.magnet.mmx:magnet-mmx-client-android:2.0.5-SNAPSHOT@aar') {
+  compile('com.magnet.mmx:magnet-mmx-client-android:2.0.5@aar') {
     transitive = true
   }
 }
