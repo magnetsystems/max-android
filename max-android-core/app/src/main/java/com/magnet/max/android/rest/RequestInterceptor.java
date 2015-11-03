@@ -122,6 +122,7 @@ public class RequestInterceptor implements Interceptor {
     }
 
     if(401 == response.code()) {
+      Log.i(TAG, "--------Received 401 for request " + request.urlString() + ", calling MaxCore.tokenInvalid");
       MaxCore.tokenInvalid(token, null);
     }
 
