@@ -70,20 +70,12 @@ final public class User {
   public static void register(final UserRegistrationInfo userRegistrationInfo, final ApiCallback<User> callback) {
     getUserService().register(userRegistrationInfo, new Callback<User>() {
       @Override public void onResponse(Response<User> response) {
-        if (null != callback) {
-          if (response.isSuccess()) {
-            callback.success(response.body());
-          } else {
-            callback.failure(new ApiError(response.message(), response.code()));
-          }
-        }
+         ApiCallbackHelper.executeCallback(callback, response);
       }
 
       @Override public void onFailure(Throwable throwable) {
         Log.e(TAG, "user register error : " + throwable.getMessage());
-        if (null != callback) {
-          callback.failure(new ApiError(throwable.getMessage()));
-        }
+        ApiCallbackHelper.executeCallback(callback, throwable);
       }
     }).executeInBackground();
   }
@@ -118,20 +110,12 @@ final public class User {
               result = true;
             }
 
-            if (null != callback) {
-              if (response.isSuccess()) {
-                callback.success(result);
-              } else {
-                callback.failure(new ApiError(response.message(), response.code()));
-              }
-            }
+            ApiCallbackHelper.executeCallback(callback, Response.success(result));
           }
 
           @Override public void onFailure(Throwable throwable) {
             Log.e(TAG, "userLogin error : " + throwable.getMessage());
-            if (null != callback) {
-              callback.failure(new ApiError(throwable.getMessage()));
-            }
+            ApiCallbackHelper.executeCallback(callback, throwable);
           }
         });
 
@@ -154,20 +138,12 @@ final public class User {
         // Unregister device
         Device.unRegister(null);
 
-        if (null != callback) {
-          if (response.isSuccess()) {
-            callback.success(logoutResult);
-          } else {
-            callback.failure(new ApiError(response.message(), response.code()));
-          }
-        }
+        ApiCallbackHelper.executeCallback(callback, response);
       }
 
       @Override public void onFailure(Throwable throwable) {
         Log.e(TAG, "user logout error : " + throwable.getMessage());
-        if (null != callback) {
-          callback.failure(new ApiError(throwable.getMessage()));
-        }
+        ApiCallbackHelper.executeCallback(callback, throwable);
       }
     }).executeInBackground();
 
@@ -185,19 +161,11 @@ final public class User {
   public static void search(String query, Integer offset, Integer size, String sort, final ApiCallback<List<User>> callback) {
     getUserService().searchUsers(query, size, offset, sort, new Callback<List<User>>() {
       @Override public void onResponse(Response<List<User>> response) {
-        if (null != callback) {
-          if (response.isSuccess()) {
-            callback.success(response.body());
-          } else {
-            callback.failure(new ApiError(response.message(), response.code()));
-          }
-        }
+        ApiCallbackHelper.executeCallback(callback, response);
       }
 
       @Override public void onFailure(Throwable throwable) {
-        if (null != callback) {
-          callback.failure(new ApiError(throwable));
-        }
+        ApiCallbackHelper.executeCallback(callback, throwable);
       }
     }).executeInBackground();
   }
@@ -210,13 +178,7 @@ final public class User {
   public static void getUsersByUserNames(List<String> userNames, final ApiCallback<List<User>> callback) {
     getUserService().getUsersByUserNames(userNames, new Callback<List<User>>() {
       @Override public void onResponse(Response<List<User>> response) {
-        if (null != callback) {
-          if (response.isSuccess()) {
-            callback.success(response.body());
-          } else {
-            callback.failure(new ApiError(response.message(), response.code()));
-          }
-        }
+        ApiCallbackHelper.executeCallback(callback, response);
       }
 
       @Override public void onFailure(Throwable throwable) {
@@ -235,19 +197,11 @@ final public class User {
   public static void getUsersByUserIds(List<String> userIds, final ApiCallback<List<User>> callback) {
     getUserService().getUsersByUserIds(userIds, new Callback<List<User>>() {
       @Override public void onResponse(Response<List<User>> response) {
-        if (null != callback) {
-          if (response.isSuccess()) {
-            callback.success(response.body());
-          } else {
-            callback.failure(new ApiError(response.message(), response.code()));
-          }
-        }
+        ApiCallbackHelper.executeCallback(callback, response);
       }
 
       @Override public void onFailure(Throwable throwable) {
-        if (null != callback) {
-          callback.failure(new ApiError(throwable));
-        }
+        ApiCallbackHelper.executeCallback(callback, throwable);
       }
     }).executeInBackground();
   }

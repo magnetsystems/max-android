@@ -87,7 +87,7 @@ public class RequestInterceptor implements Interceptor {
         Request.Builder newRequestBuilder = chain.request().newBuilder();
 
         if(null != token) {
-          newRequestBuilder.header("Authorization", token);
+          newRequestBuilder.header("Authorization", AuthUtil.generateOAuthToken(token));
         }
 
         if(useMock) {
@@ -142,6 +142,6 @@ public class RequestInterceptor implements Interceptor {
     }
 
     //Log.i(TAG, "---------adding AuthHeaders : " + authToken);
-    return StringUtil.isNotEmpty(authToken) ? AuthUtil.generateOAuthToken(authToken) : null;
+    return authToken;
   }
 }
