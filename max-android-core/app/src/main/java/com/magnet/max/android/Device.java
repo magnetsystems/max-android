@@ -63,22 +63,14 @@ public class Device {
     MagnetCall call = getDeviceService().registerDevice(deviceInfo, new Callback<Device>() {
       @Override public void onResponse(retrofit.Response<Device> response) {
         Log.i(TAG, "registerDevice success : ");
-        if (null != callback) {
-          if (response.isSuccess()) {
-            callback.success(response.body());
-          } else {
-            callback.failure(new ApiError(response.message(), response.code()));
-          }
-        }
+        ApiCallbackHelper.executeCallback(callback, response);
 
         sCurrentDevice = response.body();
       }
 
       @Override public void onFailure(Throwable throwable) {
         Log.e(TAG, "registerDevice error : " + throwable.getMessage());
-        if (null != callback) {
-          callback.failure(new ApiError(throwable.getMessage()));
-        }
+        ApiCallbackHelper.executeCallback(callback, throwable);
       }
     });
     call.executeInBackground();
@@ -87,19 +79,11 @@ public class Device {
   public static void unRegister(final ApiCallback<Boolean> callback) {
     getDeviceService().unRegisterDevice(getCurrentDeviceId(), new Callback<Boolean>() {
       @Override public void onResponse(Response<Boolean> response) {
-        if(null != callback) {
-          if (response.isSuccess()) {
-            callback.success(response.body());
-          } else {
-            callback.failure(new ApiError(response.message(), response.code()));
-          }
-        }
+        ApiCallbackHelper.executeCallback(callback, response);
       }
 
       @Override public void onFailure(Throwable throwable) {
-        if(null != callback) {
-          callback.failure(new ApiError(throwable.getMessage()));
-        }
+        ApiCallbackHelper.executeCallback(callback, throwable);
       }
     }).executeInBackground();
 
