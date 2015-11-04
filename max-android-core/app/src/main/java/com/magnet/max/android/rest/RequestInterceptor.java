@@ -122,8 +122,13 @@ public class RequestInterceptor implements Interceptor {
     }
 
     if(401 == response.code()) {
-      Log.i(TAG, "--------Received 401 for request " + request.urlString() + ", calling MaxCore.tokenInvalid");
-      MaxCore.tokenInvalid(token, null);
+      Log.w(TAG, "--------Received 401 for request " + request.urlString() + ", calling MaxCore.tokenInvalid");
+      if(shouldNotify401(request)) {
+        Log.i(TAG, "--------Notifying MaxCore on 401");
+        MaxCore.tokenInvalid(token, null);
+      } else {
+        Log.i(TAG, "--------Don't need to notify MaxCore on 401 for url " + request.urlString());
+      }
     }
 
     return response;
@@ -143,5 +148,17 @@ public class RequestInterceptor implements Interceptor {
 
     //Log.i(TAG, "---------adding AuthHeaders : " + authToken);
     return authToken;
+  }
+
+  private boolean shouldNotify401(Request request) {
+    String requestPath = request.httpUrl().encodedPath();
+    if(requestPath.endsWith("/")) {
+      requestPath = requestPath.substring(0, requestPath.length() - 1);
+    }
+
+    return !(requestPath.endsWith(RestConstants.APP_LOGIN_URL)
+        || requestPath.endsWith(RestConstants.APP_LOGIN_WITH_DEVICE_URL)
+        || requestPath.endsWith(RestConstants.USER_LOGIN_URL)
+        || requestPath.endsWith(RestConstants.USER_LOGOUT_URL));
   }
 }

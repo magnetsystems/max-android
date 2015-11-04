@@ -43,8 +43,8 @@ final public class User {
   private String mEmail;
   @SerializedName("roles")
   private String[] mRoles;
-  @SerializedName("userStatus")
-  private UserStatus mUserStatus;
+  //@SerializedName("userStatus")
+  //private UserStatus mUserStatus;
   @SerializedName("userName")
   private String mUserName;
   @SerializedName("userRealm")
@@ -56,7 +56,7 @@ final public class User {
   @SerializedName("tags")
   private String[] mTags;
   @SerializedName("userAccountData")
-  private java.util.Map<String, String> mUserAccountData;
+  private java.util.Map<String, String> mExtras;
 
   private static AtomicReference<User> sCurrentUserRef = new AtomicReference<>();
 
@@ -128,21 +128,24 @@ final public class User {
    */
   public static void logout(final ApiCallback<Boolean> callback) {
     final String currentUserId = getCurrentUserId();
+
+    // Unregister device
+    Device.unRegister(null);
+
     getUserService().userLogout(new Callback<Boolean>() {
       @Override public void onResponse(Response<Boolean> response) {
-        boolean logoutResult = response.body();
-        if (logoutResult) {
-          ModuleManager.onUserLogout(currentUserId);
-        }
+        Log.e(TAG, "user logout successfully : " + currentUserId);
 
-        // Unregister device
-        Device.unRegister(null);
+        ModuleManager.onUserLogout(currentUserId);
 
         ApiCallbackHelper.executeCallback(callback, response);
       }
 
       @Override public void onFailure(Throwable throwable) {
         Log.e(TAG, "user logout error : " + throwable.getMessage());
+
+        ModuleManager.onUserLogout(currentUserId);
+
         ApiCallbackHelper.executeCallback(callback, throwable);
       }
     }).executeInBackground();
@@ -153,13 +156,13 @@ final public class User {
   /**
    * Search users
    * @param query see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/1.4/query-dsl-query-string-query.html#query-string-syntax">Elastic search query string syntax</a>
-   * @param offset
-   * @param size
-   * @param sort
+   * @param limit The number of records to retrieve
+   * @param offset The offset to start from.
+   * @param sort The sort criteria
    * @param callback
    */
-  public static void search(String query, Integer offset, Integer size, String sort, final ApiCallback<List<User>> callback) {
-    getUserService().searchUsers(query, size, offset, sort, new Callback<List<User>>() {
+  public static void search(String query, Integer limit, Integer offset, String sort, final ApiCallback<List<User>> callback) {
+    getUserService().searchUsers(query, limit, offset, sort, new Callback<List<User>>() {
       @Override public void onResponse(Response<List<User>> response) {
         ApiCallbackHelper.executeCallback(callback, response);
       }
@@ -243,12 +246,12 @@ final public class User {
     return mRoles;
   }
 
-  /**
-   * The status {@link UserStatus} for the user.
-   */
-  public UserStatus getUserStatus() {
-    return mUserStatus;
-  }
+  ///**
+  // * The status {@link UserStatus} for the user.
+  // */
+  //public UserStatus getUserStatus() {
+  //  return mUserStatus;
+  //}
 
   /**
    * The username for the user.
@@ -288,8 +291,8 @@ final public class User {
   /**
    * The additional key-value pairs associated with the user.
    */
-  public Map<String, String> getUserAccountData() {
-    return mUserAccountData;
+  public Map<String, String> getExtras() {
+    return mExtras;
   }
 
   //TODO : synchronization ?

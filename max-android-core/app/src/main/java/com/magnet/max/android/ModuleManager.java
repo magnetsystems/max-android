@@ -223,8 +223,8 @@ import java.util.concurrent.atomic.AtomicReference;
   }
 
   public static void onUserTokenInvalid() {
-    Log.w(TAG, "User token is invalid, notify user logout");
-    onUserLogout(userIdRef.get());
+    Log.w(TAG, "User token is invalid, notify modules");
+    User.logout(null);
     notifyAuthFailure(Constants.USER_AUTH_CHALLENGE_INTENT_ACTION);
   }
 
