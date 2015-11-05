@@ -71,7 +71,7 @@ public class UpdateProfileRequest {
     }
 
     /**
-     * Build the UserRegistrationInfo object
+     * Build the UpdateProfileRequest object
      * @return
      */
     public UpdateProfileRequest build() {
