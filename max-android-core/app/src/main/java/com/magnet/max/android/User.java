@@ -17,6 +17,7 @@ package com.magnet.max.android;
 
 import android.util.Log;
 import com.google.gson.annotations.SerializedName;
+import com.magnet.max.android.auth.model.UpdateProfileRequest;
 import com.magnet.max.android.auth.model.UserLoginResponse;
 import com.magnet.max.android.auth.model.UserRealm;
 import com.magnet.max.android.auth.model.UserRegistrationInfo;
@@ -127,6 +128,11 @@ final public class User {
    * @param callback
    */
   public static void logout(final ApiCallback<Boolean> callback) {
+    if(null == sCurrentUserRef.get()) {
+      callback.failure(new ApiError("User has not login"));
+      return;
+    }
+
     final String currentUserId = getCurrentUserId();
 
     // Unregister device
@@ -223,6 +229,33 @@ final public class User {
    */
   public static String getCurrentUserId() {
     return null != sCurrentUserRef.get() ? sCurrentUserRef.get().getUserIdentifier() : null;
+  }
+
+  /**
+   * Update profile of current user
+   * @param updateProfileRequest
+   * @param callback
+   */
+  public static void updateProfile(UpdateProfileRequest updateProfileRequest, final ApiCallback<User> callback) {
+    if(null == sCurrentUserRef.get()) {
+      callback.failure(new ApiError("User has not login"));
+      return;
+    }
+
+    MagnetCall<User> call = getUserService().updateProfile(updateProfileRequest, new Callback<User>() {
+      @Override public void onResponse(Response<User> response) {
+        if (response.isSuccess()) {
+          sCurrentUserRef.set(response.body());
+        }
+
+        ApiCallbackHelper.executeCallback(callback, response);
+      }
+
+      @Override public void onFailure(Throwable throwable) {
+        ApiCallbackHelper.executeCallback(callback, throwable);
+      }
+    });
+    call.executeInBackground();
   }
 
   /**

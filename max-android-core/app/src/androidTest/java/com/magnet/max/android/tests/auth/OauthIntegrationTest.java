@@ -24,6 +24,7 @@ import com.magnet.max.android.ApiError;
 import com.magnet.max.android.MaxCore;
 import com.magnet.max.android.MaxModule;
 import com.magnet.max.android.User;
+import com.magnet.max.android.auth.model.UpdateProfileRequest;
 import com.magnet.max.android.auth.model.UserRealm;
 import com.magnet.max.android.auth.model.UserRegistrationInfo;
 import com.magnet.max.android.config.MaxAndroidConfig;
@@ -33,6 +34,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
   private static final String TAG = OauthIntegrationTest.class.getSimpleName();
@@ -121,6 +124,23 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
 
     loginSignal.await(4, TimeUnit.SECONDS);
     assertEquals(0, loginSignal.getCount());
+
+    final CountDownLatch updateProfileSignal = new CountDownLatch(1);
+    assertNotNull(User.getCurrentUser());
+    final String updatedFirstName =  "JimTestUpdated";
+    User.updateProfile(new UpdateProfileRequest.Builder().firstName(updatedFirstName).build(), new ApiCallback<User>() {
+      @Override public void success(User user) {
+        assertNotNull(User.getCurrentUser());
+        assertThat(User.getCurrentUser().getFirstName()).isEqualTo(updatedFirstName);
+        updateProfileSignal.countDown();
+      }
+
+      @Override public void failure(ApiError error) {
+        fail("updateProfile failed : " + error.getMessage());
+      }
+    });
+    updateProfileSignal.await(4, TimeUnit.SECONDS);
+    assertEquals(0, updateProfileSignal.getCount());
 
     //final CountDownLatch userSearchSignal = new CountDownLatch(1);
     //User.search("lastName=Liu", null, null, null, new ApiCallback<List<User>>() {
