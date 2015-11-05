@@ -20,6 +20,7 @@
  */
 package com.magnet.max.android;
 
+import com.magnet.max.android.auth.model.UpdateProfileRequest;
 import com.magnet.max.android.auth.model.UserLoginResponse;
 import com.magnet.max.android.auth.model.UserRegistrationInfo;
 import retrofit.MagnetCall;
@@ -30,6 +31,7 @@ import retrofit.http.FormUrlEncoded;
 import retrofit.http.GET;
 import retrofit.http.Header;
 import retrofit.http.POST;
+import retrofit.http.PUT;
 import retrofit.http.Query;
 
 /**public**/ interface UserService {
@@ -136,4 +138,13 @@ import retrofit.http.Query;
       retrofit.Callback<java.util.List<User>> callback
   );
 
+  /**
+   *
+   * @param updateProfileRequest
+   * @param callback
+   * @return
+   */
+  @PUT("com.magnet.server/user/profile")
+  MagnetCall<User> updateProfile(UpdateProfileRequest updateProfileRequest,
+      retrofit.Callback<User> callback);
 }

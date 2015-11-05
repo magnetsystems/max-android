@@ -26,13 +26,13 @@ public class UserRegistrationInfo {
   private String password;
   private String email;
   private String[] roles;
-  private UserStatus userStatus;
+  //private UserStatus userStatus;
   private String userName;
   private UserRealm userRealm;
   private String firstName;
   private String lastName;
   private String[] tags;
-  private java.util.Map<String, String> userAccountData;
+  private java.util.Map<String, String> extras;
 
   private UserRegistrationInfo() {
 
@@ -66,12 +66,12 @@ public class UserRegistrationInfo {
     return roles;
   }
 
-  /**
-   * The status {@link UserStatus} for the user.
-   */
-  public UserStatus getUserStatus() {
-    return userStatus;
-  }
+  ///**
+  // * The status {@link UserStatus} for the user.
+  // */
+  //public UserStatus getUserStatus() {
+  //  return userStatus;
+  //}
 
   /**
    * The username for the user.
@@ -111,8 +111,8 @@ public class UserRegistrationInfo {
   /**
    * The additional key-value pairs associated with the user.
    */
-  public Map<String, String> getUserAccountData() {
-    return userAccountData;
+  public Map<String, String> getExtras() {
+    return extras;
   }
 
   /**
@@ -173,13 +173,13 @@ public class UserRegistrationInfo {
       return this;
     }
 
-    /**
-     * The status {@link UserStatus} for the user.
-     */
-    public Builder userStatus(UserStatus value) {
-      toBuild.userStatus = value;
-      return this;
-    }
+    ///**
+    // * The status {@link UserStatus} for the user.
+    // */
+    //public Builder userStatus(UserStatus value) {
+    //  toBuild.userStatus = value;
+    //  return this;
+    //}
 
     /**
      * The username for the user.
@@ -208,8 +208,8 @@ public class UserRegistrationInfo {
     /**
      * The additional key-value pairs associated with the user.
      */
-    public Builder userAccountData(java.util.Map<String, String> value) {
-      toBuild.userAccountData = value;
+    public Builder extras(java.util.Map<String, String> value) {
+      toBuild.extras = value;
       return this;
     }
   }

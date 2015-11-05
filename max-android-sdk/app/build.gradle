@@ -5,6 +5,14 @@ archivesBaseName = 'magnet-max-android-sdk'
 version = "2.0.11"
 group = "com.magnet.max.android"
 
+if (hasProperty('localMavenRepo')) {
+  repositories {
+    maven {
+      url uri("${localMavenRepo}")
+    }
+  }
+}
+
 repositories {
   mavenLocal()
   maven {
@@ -222,13 +230,26 @@ artifacts {
 
 def homeDir = System.getenv('HOME')
 
-task uploadLocal(type: Upload) {
-  configuration = configurations.archives
-  repositories {
-    mavenDeployer {
-      repository(url: mavenLocal().url)
+if (hasProperty('localMavenRepo')) {
+    task uploadLocal(type: Upload) {
+      configuration = configurations.archives
+      repositories {
+         mavenDeployer {
+             println("Using overidden mavenLocal: ${localMavenRepo}")
+             repository(url: uri("${localMavenRepo}"))
+         }
+       }
     }
-  }
+} else {
+    task uploadLocal(type: Upload) {
+        configuration = configurations.archives
+        repositories {
+            mavenDeployer {
+                println("Using mavenLocal from ~/.m2/settings.xml")
+                repository(url: mavenLocal().url)
+            }
+        }
+    }
 }
 
 task uploadRelease(type: Upload) {

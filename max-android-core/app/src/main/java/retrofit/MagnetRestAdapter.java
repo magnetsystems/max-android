@@ -25,6 +25,7 @@ import com.magnet.max.android.connectivity.ConnectivityManager;
 import com.magnet.max.android.rest.MagnetCallAdapter;
 import com.magnet.max.android.rest.RequestInterceptor;
 import com.magnet.max.android.rest.RequestManager;
+import com.magnet.max.android.rest.RestConstants;
 import com.magnet.max.android.rest.marshalling.MagnetGsonConverterFactory;
 import com.magnet.max.android.util.StringUtil;
 import com.squareup.okhttp.HttpUrl;
@@ -265,8 +266,8 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
   }
 
   @Override public boolean isAuthRequired(Request request) {
-    if("POST".equals(request.method()) && (request.urlString().endsWith("/api/com.magnet.server/applications/session")
-    || request.urlString().endsWith("/api/com.magnet.server/applications/session-device"))) {
+    if("POST".equals(request.method()) && (request.urlString().endsWith(RestConstants.APP_LOGIN_URL)
+    || request.urlString().endsWith(RestConstants.APP_LOGIN_WITH_DEVICE_URL))) {
       return false;
     }
     return true;
