@@ -145,6 +145,6 @@ import retrofit.http.Query;
    * @return
    */
   @PUT("com.magnet.server/user/profile")
-  MagnetCall<User> updateProfile(UpdateProfileRequest updateProfileRequest,
+  MagnetCall<User> updateProfile(@Body UpdateProfileRequest updateProfileRequest,
       retrofit.Callback<User> callback);
 }
