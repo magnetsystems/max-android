@@ -103,6 +103,8 @@ import retrofit.MagnetRestAdapter;
 
           @Override public void onFailure(Throwable throwable) {
             Log.e(TAG, "appCheckin error : " + throwable.getMessage());
+            // Throw a runtime exception since this is not a recoverable error
+            throw new RuntimeException("Application login failed, please check clientId and secret or update your app");
           }
         });
     call.executeInBackground();
