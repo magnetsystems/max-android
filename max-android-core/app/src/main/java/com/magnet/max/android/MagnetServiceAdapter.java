@@ -19,6 +19,7 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
 import com.magnet.max.android.auth.model.AppLoginResponse;
+import com.magnet.max.android.auth.model.ApplicationToken;
 import com.magnet.max.android.auth.model.DeviceInfo;
 import com.magnet.max.android.config.MaxAndroidConfig;
 import com.magnet.max.android.util.AuthUtil;
@@ -26,8 +27,10 @@ import com.magnet.max.android.util.StringUtil;
 import com.squareup.okhttp.OkHttpClient;
 import java.util.HashMap;
 import java.util.Map;
+import retrofit.Callback;
 import retrofit.MagnetCall;
 import retrofit.MagnetRestAdapter;
+import retrofit.Response;
 
 /**public**/ class MagnetServiceAdapter {
   private static final String TAG = MagnetServiceAdapter.class.getSimpleName();
@@ -78,6 +81,24 @@ import retrofit.MagnetRestAdapter;
       return;
     }
 
+    // Check if cached token is valid
+    final ApplicationToken applicationTokenCache = ModuleManager.getApplicationToken();
+    if(null != applicationTokenCache && !applicationTokenCache.isAboutToExpireInMinutes(30)) {
+      Log.i(TAG, "Using cached application token");
+
+      applicationService.getMobileConfig(new Callback<Map<String, String>>() {
+        @Override public void onResponse(Response<Map<String, String>> response) {
+          handleAppLogin(applicationTokenCache, response.body(), applicationTokenCache.getMmxAppId());
+        }
+
+        @Override public void onFailure(Throwable throwable) {
+          Log.e(TAG, "Failed to getMobileConfig due to : " + throwable.getMessage());
+        }
+      }).executeInBackground();
+
+      return;
+    }
+
     // Reset app token
     ModuleManager.onAppLogout(config.getClientId());
 
@@ -92,13 +113,9 @@ import retrofit.MagnetRestAdapter;
               //TODO : save as current device?
             }
 
-            Map<String, String> serverConfig = new HashMap<String, String>();
-            serverConfig.put("mmx-appId", appCheckinResponse.getApplicationToken().getMmxAppId());
-            if(null != appCheckinResponse.getServerConfig()) {
-              serverConfig.putAll(appCheckinResponse.getServerConfig());
-            }
-            ModuleManager.onAppLogin(config.getClientId(), appCheckinResponse.getApplicationToken(),
-                serverConfig);
+            handleAppLogin(appCheckinResponse.getApplicationToken(),
+                appCheckinResponse.getServerConfig(),
+                appCheckinResponse.getApplicationToken().getMmxAppId());
           }
 
           @Override public void onFailure(Throwable throwable) {
@@ -108,6 +125,16 @@ import retrofit.MagnetRestAdapter;
           }
         });
     call.executeInBackground();
+  }
+
+  private void handleAppLogin(ApplicationToken appToken, Map<String, String> configMap,
+      String mmxAppId) {
+    Map<String, String> serverConfig = new HashMap<String, String>();
+    serverConfig.put("mmx-appId", mmxAppId);
+    if(null != configMap) {
+      serverConfig.putAll(configMap);
+    }
+    ModuleManager.onAppLogin(config.getClientId(), appToken, serverConfig);
   }
 
   /**

@@ -21,25 +21,16 @@
 
 package com.magnet.max.android.auth.model;
 
+import android.os.Parcel;
+import android.os.Parcelable;
 import com.google.gson.annotations.SerializedName;
 
-public class ApplicationToken {
+public class ApplicationToken extends BaseToken {
 
   private String scope;
 
   @SerializedName("mmx_app_id")
   private String mmxAppId;
-
-  @SerializedName("expires_in")
-  private Long expiresIn;
-
-  @SerializedName("access_token")
-  private String accessToken;
-
-  @SerializedName("token_type")
-  private String tokenType;
-
-  private Long creationTime;
 
   public String getScope() {
     return scope;
@@ -57,35 +48,25 @@ public class ApplicationToken {
     this.mmxAppId = mmxAppId;
   }
 
-  public Long getExpiresIn() {
-    return expiresIn;
+  @Override public void writeToParcel(Parcel dest, int flags) {
+    writeToParcelInternal(dest, flags);
+    dest.writeString(this.scope);
+    dest.writeString(this.mmxAppId);
   }
 
-  public void setExpiresIn(Long expiresIn) {
-    this.expiresIn = expiresIn;
+  protected ApplicationToken(Parcel in) {
+    parseFromParcel(in);
+    this.scope = in.readString();
+    this.mmxAppId = in.readString();
   }
 
-  public String getAccessToken() {
-    return accessToken;
-  }
+  public static final Parcelable.Creator<ApplicationToken> CREATOR = new Parcelable.Creator<ApplicationToken>() {
+    public ApplicationToken createFromParcel(Parcel source) {
+      return new ApplicationToken(source);
+    }
 
-  public void setAccessToken(String accessToken) {
-    this.accessToken = accessToken;
-  }
-
-  public String getTokenType() {
-    return tokenType;
-  }
-
-  public void setTokenType(String tokenType) {
-    this.tokenType = tokenType;
-  }
-
-  public Long getCreationTime() {
-    return creationTime;
-  }
-
-  public void setCreationTime(Long creationTime) {
-    this.creationTime = creationTime;
-  }
+    public ApplicationToken[] newArray(int size) {
+      return new ApplicationToken[size];
+    }
+  };
 }

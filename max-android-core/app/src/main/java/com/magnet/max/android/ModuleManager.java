@@ -15,10 +15,7 @@
  */
 package com.magnet.max.android;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -60,7 +57,6 @@ import java.util.concurrent.atomic.AtomicReference;
     } else {
       configMap.clear();
     }
-
     if(null != MaxCore.getConfig().getAllConfigs()) {
       configMap.putAll(MaxCore.getConfig().getAllConfigs());
     }
@@ -78,6 +74,13 @@ import java.util.concurrent.atomic.AtomicReference;
     } else {
       registeredModules.clear();
     }
+  }
+
+  public static synchronized void deInit() {
+    for(ModuleInfo s : getAllRegisteredModules()) {
+      s.getModule().deInitModule();
+    }
+    registeredModules.clear();
   }
 
   public static synchronized void register(MaxModule module, ApiCallback<Boolean> callback) {
@@ -230,6 +233,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
   public static void onAppTokenInvalid() {
     notifyAuthFailure(Constants.APP_AUTH_CHALLENGE_INTENT_ACTION);
+  }
+
+  public static ApplicationToken getApplicationToken() {
+    return appTokenRef.get();
   }
 
   /**

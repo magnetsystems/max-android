@@ -23,25 +23,14 @@ package com.magnet.max.android.auth.model;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import com.google.gson.annotations.SerializedName;
 
-public class UserToken implements Parcelable {
-
-  @SerializedName("expires_in")
-  private Long expiresIn;
-
-  @SerializedName("access_token")
-  private String accessToken;
-
-  @SerializedName("token_type")
-  private String tokenType;
-
-  private Long creationTime;
+public class UserToken extends BaseToken {
 
   public UserToken(Long expiresIn, String accessToken, String tokenType) {
-    this.expiresIn = expiresIn;
-    this.accessToken = accessToken;
-    this.tokenType = tokenType;
+    super(expiresIn, accessToken, tokenType, null, null);
+  }
+
+  public UserToken() {
   }
 
   public Long getExpiresIn() {
@@ -68,33 +57,12 @@ public class UserToken implements Parcelable {
     this.tokenType = tokenType;
   }
 
-  public Long getCreationTime() {
-    return creationTime;
-  }
-
-  public void setCreationTime(Long creationTime) {
-    this.creationTime = creationTime;
-  }
-
-  @Override public int describeContents() {
-    return 0;
-  }
-
   @Override public void writeToParcel(Parcel dest, int flags) {
-    dest.writeValue(this.expiresIn);
-    dest.writeString(this.accessToken);
-    dest.writeString(this.tokenType);
-    dest.writeValue(this.creationTime);
-  }
-
-  public UserToken() {
+    writeToParcelInternal(dest, flags);
   }
 
   protected UserToken(Parcel in) {
-    this.expiresIn = (Long) in.readValue(Long.class.getClassLoader());
-    this.accessToken = in.readString();
-    this.tokenType = in.readString();
-    this.creationTime = (Long) in.readValue(Long.class.getClassLoader());
+    parseFromParcel(in);
   }
 
   public static final Parcelable.Creator<UserToken> CREATOR = new Parcelable.Creator<UserToken>() {

@@ -80,10 +80,12 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
 
     final CountDownLatch userRegSignal = new CountDownLatch(1);
 
-    String userName = "test" + System.currentTimeMillis();
+    final String userName = "test" + System.currentTimeMillis();
+    final String firstName = "JimTest";
+    final String lastName = "Liu";
     UserRegistrationInfo newUser = new UserRegistrationInfo.Builder().userName(userName).email(
         userName + "@magnet.com").password("password")
-        .firstName("JimTest").lastName("Liu").userRealm(UserRealm.DB).build();
+        .firstName(firstName).lastName(lastName).userRealm(UserRealm.DB).build();
     User.register(newUser, new ApiCallback<User>() {
       @Override public void success(User response) {
         User user = response;
@@ -107,6 +109,10 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
       @Override public void success(Boolean aBoolean) {
         assertTrue(aBoolean);
         assertNotNull(User.getCurrentUser());
+        assertNotNull(User.getCurrentUser().getUserName());
+        assertThat(User.getCurrentUser().getUserName()).isEqualTo(userName);
+        assertThat(User.getCurrentUser().getFirstName()).isEqualTo(firstName);
+        assertThat(User.getCurrentUser().getLastName()).isEqualTo(lastName);
         loginSignal.countDown();
       }
 
@@ -139,7 +145,7 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
         fail("updateProfile failed : " + error.getMessage());
       }
     });
-    updateProfileSignal.await(4, TimeUnit.SECONDS);
+    updateProfileSignal.await(400, TimeUnit.SECONDS);
     assertEquals(0, updateProfileSignal.getCount());
 
     //final CountDownLatch userSearchSignal = new CountDownLatch(1);
