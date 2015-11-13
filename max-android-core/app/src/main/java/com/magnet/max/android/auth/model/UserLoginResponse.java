@@ -35,8 +35,6 @@ public class UserLoginResponse {
   @SerializedName("token_type")
   private String tokenType;
 
-  private Long creationTime;
-
   private User user;
 
   public Long getExpiresIn() {
@@ -61,14 +59,6 @@ public class UserLoginResponse {
 
   public void setTokenType(String tokenType) {
     this.tokenType = tokenType;
-  }
-
-  public Long getCreationTime() {
-    return creationTime;
-  }
-
-  public void setCreationTime(Long creationTime) {
-    this.creationTime = creationTime;
   }
 
   public User getUser() {

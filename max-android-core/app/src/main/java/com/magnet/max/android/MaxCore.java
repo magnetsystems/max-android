@@ -124,6 +124,14 @@ final public class MaxCore {
     }
   }
 
+  public synchronized static void deInit() {
+    if(!mIsInited.get()) {
+      throw new IllegalArgumentException("init is not finished yet");
+    }
+
+    ModuleManager.deInit();
+  }
+
   public static void userTokenInvalid(String token, MaxModule source) {
     ModuleManager.onUserTokenInvalid();
   }

@@ -22,6 +22,7 @@ package com.magnet.max.android;
 
 import com.magnet.max.android.auth.model.AppLoginResponse;
 import com.magnet.max.android.auth.model.DeviceInfo;
+import java.util.Map;
 import retrofit.MagnetCall;
 import retrofit.http.*;
 
@@ -47,5 +48,15 @@ import retrofit.http.*;
       @Header("Authorization") String authorization,
       @Body DeviceInfo deviceInfo,
       retrofit.Callback<AppLoginResponse> callback
+  );
+
+  /**
+   *
+   * GET /com.magnet.server/config/mobile
+   * @param callback asynchronous callback
+   */
+  @GET("com.magnet.server/config/mobile")
+  MagnetCall<Map<String, String>> getMobileConfig(
+      retrofit.Callback<Map<String, String>> callback
   );
 }
