@@ -129,7 +129,7 @@ final public class User {
    */
   public static void logout(final ApiCallback<Boolean> callback) {
     if(null == sCurrentUserRef.get()) {
-      callback.failure(new ApiError("User has not login"));
+      ApiCallbackHelper.executeCallback(callback, new ApiError("User has not login"));
       return;
     }
 
@@ -191,9 +191,7 @@ final public class User {
       }
 
       @Override public void onFailure(Throwable throwable) {
-        if (null != callback) {
-          callback.failure(new ApiError(throwable));
-        }
+        ApiCallbackHelper.executeCallback(callback, throwable);
       }
     }).executeInBackground();
   }

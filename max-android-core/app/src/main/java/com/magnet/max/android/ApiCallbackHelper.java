@@ -35,7 +35,9 @@ import retrofit.Response;
       if(MagnetServiceException.class.equals(throwable.getClass())) {
         MagnetServiceException magnetServiceException = (MagnetServiceException) throwable;
         callback.failure(new ApiError(magnetServiceException.getMessage(), magnetServiceException.getCode(), magnetServiceException));
-      } else {
+      } else if(ApiError.class.equals(throwable.getClass())) {
+        callback.failure((ApiError) throwable);
+      } else{
         callback.failure(new ApiError(throwable.getMessage()));
       }
     }
