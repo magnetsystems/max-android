@@ -44,7 +44,7 @@ public class RequestInterceptor implements Interceptor {
 
   @Override public Response intercept(Chain chain) throws IOException {
     Request request = chain.request();
-    Log.i(TAG, "---------Intercepting url : " + request.urlString());
+    Log.i(TAG, "---------Intercepting url : " + request.method() + " " + request.urlString());
 
     CallOptions options = requestManager.popRequestOptions(request);
     if(null != options && null != options.getCacheOptions()) {
