@@ -52,11 +52,6 @@ public class MaxRestAuthenticator implements Authenticator {
     Log.e(TAG, "Got 401 for request : " + request.urlString() + " with token :\n" + originalToken
       + "\n error : " + authError);
 
-    String requestPath = request.httpUrl().encodedPath();
-    if(requestPath.endsWith("/")) {
-      requestPath = requestPath.substring(0, requestPath.length() - 1);
-    }
-
     Response401 response401 = null;
     if(StringUtil.isNotEmpty(authError)) {
       response401 = new Response401(authError);
@@ -64,115 +59,46 @@ public class MaxRestAuthenticator implements Authenticator {
 
     final AtomicReference<String> refreshedToken = new AtomicReference<>();
 
+    String requestPath = request.httpUrl().encodedPath();
+    if(requestPath.endsWith("/")) {
+      requestPath = requestPath.substring(0, requestPath.length() - 1);
+    }
     if(requestPath.endsWith(RestConstants.APP_LOGIN_URL)
         || requestPath.endsWith(RestConstants.APP_LOGIN_WITH_DEVICE_URL)) {
-      // App login failed
+      // App login failed, handle by callback in MagnetRestAdapter
     } else if(requestPath.endsWith(RestConstants.USER_LOGIN_URL)
         || requestPath.endsWith(RestConstants.USER_LOGOUT_URL)) {
-      // User login failed
+      // User login failed, handle by callback in User.login
     } else if(requestPath.endsWith(RestConstants.USER_REFRESH_TOKEN_URL)) {
       // User token refresh failed
-      MaxCore.tokenInvalid(originalToken, null);
+      MaxCore.userTokenInvalid(originalToken, null);
     } else if(null != response401 && response401.getErrorType() == Response401.AuthErrorType.CLIENT_ACCESS_TOEKN) {
-      // Clean up exisiting token
-      ModuleManager.onAppLogout(MaxCore.getConfig().getClientId());
-
-      String authHeader = AuthUtil.generateBasicAuthToken(MaxCore.getConfig().getClientId(), MaxCore.getConfig().getClientSecret());
-      final CountDownLatch latch = new CountDownLatch(1);
-      getApplicationService().appCheckin(Device.getCurrentDeviceId(), authHeader, new Callback<AppLoginResponse>() {
-        @Override public void onResponse(retrofit.Response<AppLoginResponse> response) {
-          if(response.isSuccess()) {
-            Log.i(TAG, "appCheckin success : ");
-          } else {
-            handleError(response.message());
-            return;
-          }
-          AppLoginResponse appCheckinResponse = response.body();
-          refreshedToken.set(appCheckinResponse.getAccessToken());
-          ModuleManager.onAppLogin(MaxCore.getConfig().getClientId(),
-              new ApplicationToken(appCheckinResponse.getExpiresIn(), appCheckinResponse.getAccessToken(), appCheckinResponse.getTokenType(),
-                  appCheckinResponse.getScope(), appCheckinResponse.getMmxAppId()),
-              appCheckinResponse.getServerConfig());
-
-          latch.countDown();
-        }
-
-        @Override public void onFailure(Throwable throwable) {
-          handleError(throwable.getMessage());
-          latch.countDown();
-        }
-
-        private void handleError(String errorMessage) {
-          Log.e(TAG, "appCheckin failed due to : " + errorMessage);
-          // Reset app token
-          ModuleManager.onAppLogout(MaxCore.getConfig().getClientId());
-          AuthUtil.handleAppLoginFailure();
-        }
-      }).executeInBackground();
-
-      try {
-        latch.await(REFRESH_TOKEN_TIMEOUT, TimeUnit.SECONDS);
-      } catch (InterruptedException e) {
-        Log.d(TAG, "refresh app token timeout");
-      }
+      renewAppToken(refreshedToken);
     } else if(null != response401 && response401.getErrorType() == Response401.AuthErrorType.USER_ACCESS_TOKEN) {
-      // Trying to auto recover to renew user token
-      final UserToken userToken = ModuleManager.getUserToken();
-      if(null != userToken && StringUtil.isNotEmpty(userToken.getRefreshToken())) {
-        final CountDownLatch latch = new CountDownLatch(1);
-        getUserService().renewToken(new RenewTokenRequest(userToken.getRefreshToken()), new Callback<UserLoginResponse>() {
-          @Override public void onResponse(retrofit.Response<UserLoginResponse> response) {
-            if(response.isSuccess()) {
-              Log.i(TAG, "renewToken success : ");
-            } else {
-              Log.e(TAG, "renewToken failed due to : " + response.message());
-              handleTokenRefreshFailure();
-              latch.countDown();
-              return;
-            }
-
-            UserLoginResponse userLoginResponse = response.body();
-
-            if (null != userLoginResponse.getAccessToken()) {
-              ModuleManager.onUserTokenRefresh(userLoginResponse.getUser().getUserIdentifier(),
-                  new UserToken(userLoginResponse.getExpiresIn(), userLoginResponse.getAccessToken(),
-                      userToken.getRefreshToken(), userLoginResponse.getTokenType()));
-
-              refreshedToken.set(userLoginResponse.getAccessToken());
-            } else {
-              handleTokenRefreshFailure();
-            }
-
-            latch.countDown();
-          }
-
-          @Override public void onFailure(Throwable throwable) {
-            Log.e(TAG, "renewToken failed due to : " + throwable.getMessage());
-            handleTokenRefreshFailure();
-            latch.countDown();
-          }
-        }).executeInBackground();
-
-        try {
-          latch.await(REFRESH_TOKEN_TIMEOUT, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-          Log.d(TAG, "refresh user token timeout");
-        }
-      }
+      renewUserToken(refreshedToken);
     } else {
-      MaxCore.tokenInvalid(originalToken, null);
+      if(null != response401) {
+        if(response401.getErrorType() == Response401.AuthErrorType.USER_ACCESS_TOKEN) {
+          MaxCore.userTokenInvalid(originalToken, null);
+        } else {
+          MaxCore.appTokenInvalid(originalToken, null);
+        }
+      } else {
+        MaxCore.tokenInvalid(originalToken, null);
+      }
     }
 
-    // Answer the challenger with refreshed token
+    // Reply the request with refreshed token
     if(null != refreshedToken.get()) {
       Log.d(TAG, "Using refreshed token : " + refreshedToken.get());
 
+      // Replace token
       Headers newHeaders = request.headers().newBuilder().set(AuthUtil.AUTHORIZATION_HEADER,
           AuthUtil.generateOAuthToken(refreshedToken.get())).build();
 
       return request.newBuilder().headers(newHeaders).build();
     } else {
-      Log.w(TAG, "No new token available, won't answer the challenge.");
+      Log.w(TAG, "No new token available, won't answer the challenge for " + request.urlString());
     }
 
     return null;
@@ -198,7 +124,100 @@ public class MaxRestAuthenticator implements Authenticator {
     return mApplicationService;
   }
 
-  private void handleTokenRefreshFailure() {
+  private void renewAppToken(final AtomicReference<String> refreshedToken) {
+    // Clean up exisiting token
+    ModuleManager.onAppLogout(MaxCore.getConfig().getClientId());
 
+    String authHeader = AuthUtil.generateBasicAuthToken(MaxCore.getConfig().getClientId(), MaxCore.getConfig().getClientSecret());
+    final CountDownLatch latch = new CountDownLatch(1);
+    getApplicationService().appCheckin(Device.getCurrentDeviceId(), authHeader, new Callback<AppLoginResponse>() {
+      @Override public void onResponse(retrofit.Response<AppLoginResponse> response) {
+        if(response.isSuccess()) {
+          Log.i(TAG, "appCheckin success : ");
+        } else {
+          handleError(response.message());
+          return;
+        }
+        AppLoginResponse appCheckinResponse = response.body();
+        refreshedToken.set(appCheckinResponse.getAccessToken());
+        ModuleManager.onAppLogin(MaxCore.getConfig().getClientId(),
+            new ApplicationToken(appCheckinResponse.getExpiresIn(), appCheckinResponse.getAccessToken(), appCheckinResponse.getTokenType(),
+                appCheckinResponse.getScope(), appCheckinResponse.getMmxAppId()),
+            appCheckinResponse.getServerConfig());
+
+        latch.countDown();
+      }
+
+      @Override public void onFailure(Throwable throwable) {
+        handleError(throwable.getMessage());
+        latch.countDown();
+      }
+
+      private void handleError(String errorMessage) {
+        Log.e(TAG, "appCheckin failed due to : " + errorMessage);
+        // Reset app token
+        ModuleManager.onAppLogout(MaxCore.getConfig().getClientId());
+        AuthUtil.handleAppLoginFailure();
+      }
+    }).executeInBackground();
+
+    try {
+      latch.await(REFRESH_TOKEN_TIMEOUT, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      Log.d(TAG, "refresh app token timeout");
+    }
+  }
+
+  private void renewUserToken(final AtomicReference<String> refreshedToken) {
+    // Trying to auto recover to renew user token
+    final UserToken userToken = ModuleManager.getUserToken();
+    if(null != userToken && StringUtil.isNotEmpty(userToken.getRefreshToken())) {
+      final CountDownLatch latch = new CountDownLatch(1);
+      getUserService().renewToken(new RenewTokenRequest(userToken.getRefreshToken()), new Callback<UserLoginResponse>() {
+        @Override public void onResponse(retrofit.Response<UserLoginResponse> response) {
+          if(response.isSuccess()) {
+            Log.i(TAG, "renewToken success : ");
+          } else {
+            Log.e(TAG, "renewToken failed due to : " + response.message());
+            handleUserTokenRefreshFailure();
+            latch.countDown();
+            return;
+          }
+
+          UserLoginResponse userLoginResponse = response.body();
+
+          if (null != userLoginResponse.getAccessToken()) {
+            ModuleManager.onUserTokenRefresh(userLoginResponse.getUser().getUserIdentifier(),
+                new UserToken(userLoginResponse.getExpiresIn(), userLoginResponse.getAccessToken(),
+                    userToken.getRefreshToken(), userLoginResponse.getTokenType()));
+
+            refreshedToken.set(userLoginResponse.getAccessToken());
+          } else {
+            handleUserTokenRefreshFailure();
+          }
+
+          latch.countDown();
+        }
+
+        @Override public void onFailure(Throwable throwable) {
+          Log.e(TAG, "renewToken failed due to : " + throwable.getMessage());
+          handleUserTokenRefreshFailure();
+          latch.countDown();
+        }
+      }).executeInBackground();
+
+      try {
+        latch.await(REFRESH_TOKEN_TIMEOUT, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        Log.d(TAG, "refresh user token timeout");
+      }
+    } else {
+      Log.w(TAG, "Refresh token is not available, won't renew");
+      handleUserTokenRefreshFailure();
+    }
+  }
+
+  private void handleUserTokenRefreshFailure() {
+    ModuleManager.onUserTokenInvalid();
   }
 }

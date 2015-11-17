@@ -19,6 +19,9 @@ package com.magnet.max.android.auth.model;
 import com.magnet.max.android.util.MagnetUtils;
 import com.magnet.max.android.util.StringUtil;
 
+/**
+ * see <a href="http://self-issued.info/docs/draft-ietf-oauth-v2-bearer.html">The OAuth 2.0 Authorization Framework: Bearer Token Usage</a>
+ */
 public class Response401 {
   public static final String ERROR_HEADER = "WWW-Authenticate";
 

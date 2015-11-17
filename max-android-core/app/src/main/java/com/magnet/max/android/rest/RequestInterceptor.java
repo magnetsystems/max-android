@@ -25,6 +25,9 @@ import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 import java.io.IOException;
 
+/**
+ * Interceptor to handle caching and access token
+ */
 public class RequestInterceptor implements Interceptor {
   public static final String TAG = RequestInterceptor.class.getSimpleName();
 
@@ -95,7 +98,7 @@ public class RequestInterceptor implements Interceptor {
         }
 
         if(useMock) {
-          newRequestBuilder.url(request.urlString().replace("/api/", "/mock/api/"));
+          newRequestBuilder.url(request.urlString().replace(RestConstants.REST_BASE_PATH, RestConstants.REST_MOCK_BASE_PATH));
         }
 
         response = chain.proceed(newRequestBuilder.build());
@@ -124,16 +127,6 @@ public class RequestInterceptor implements Interceptor {
         && (options.getCacheOptions().getMaxCacheAge() > 0 || options.getCacheOptions().isAlwaysUseCacheIfOffline())) {
       return cacheManager.cacheResponse(request, response, options.getCacheOptions());
     }
-
-    //if(401 == response.code()) {
-    //  Log.w(TAG, "--------Received 401 for request " + request.urlString() + ", calling MaxCore.tokenInvalid");
-    //  if(shouldNotify401(request)) {
-    //    Log.i(TAG, "--------Notifying MaxCore on 401");
-    //    MaxCore.tokenInvalid(token, null);
-    //  } else {
-    //    Log.i(TAG, "--------Don't need to notify MaxCore on 401 for url " + request.urlString());
-    //  }
-    //}
 
     return response;
   }

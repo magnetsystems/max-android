@@ -9,4 +9,7 @@ public interface RestConstants {
   String USER_LOGIN_URL = "api/com.magnet.server/user/session";
   String USER_LOGOUT_URL = "api/com.magnet.server/user/session";
   String USER_REFRESH_TOKEN_URL = "api/com.magnet.server/user/newtoken";
+
+  String REST_BASE_PATH = "/api/";
+  String REST_MOCK_BASE_PATH = "/mock/api/";
 }
