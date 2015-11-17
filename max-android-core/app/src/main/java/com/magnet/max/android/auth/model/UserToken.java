@@ -23,11 +23,16 @@ package com.magnet.max.android.auth.model;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import com.google.gson.annotations.SerializedName;
 
 public class UserToken extends BaseToken {
 
-  public UserToken(Long expiresIn, String accessToken, String tokenType) {
+  @SerializedName("refresh_token")
+  protected String refreshToken;
+
+  public UserToken(Long expiresIn, String accessToken, String refreshToken, String tokenType) {
     super(expiresIn, accessToken, tokenType, null, null);
+    this.refreshToken = refreshToken;
   }
 
   public UserToken() {
@@ -45,6 +50,10 @@ public class UserToken extends BaseToken {
     return accessToken;
   }
 
+  public String getRefreshToken() {
+    return refreshToken;
+  }
+
   public void setAccessToken(String accessToken) {
     this.accessToken = accessToken;
   }
@@ -59,10 +68,12 @@ public class UserToken extends BaseToken {
 
   @Override public void writeToParcel(Parcel dest, int flags) {
     writeToParcelInternal(dest, flags);
+    dest.writeString(this.refreshToken);
   }
 
   protected UserToken(Parcel in) {
     parseFromParcel(in);
+    this.refreshToken = in.readString();
   }
 
   public static final Parcelable.Creator<UserToken> CREATOR = new Parcelable.Creator<UserToken>() {

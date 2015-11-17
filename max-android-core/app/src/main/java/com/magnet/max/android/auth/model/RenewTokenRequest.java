@@ -18,49 +18,43 @@ package com.magnet.max.android.auth.model;
 
 import com.google.gson.annotations.SerializedName;
 import com.magnet.max.android.Device;
-import java.util.Map;
+import com.magnet.max.android.MaxCore;
 
-public class AppLoginResponse {
+public class RenewTokenRequest {
 
-  @SerializedName("expires_in")
-  protected Long expiresIn;
+  @SerializedName("refresh_token")
+  protected String refreshToken;
+  @SerializedName("client_id")
+  protected String clientId;
+  @SerializedName("grant_type")
+  protected String grantType = "refresh_token";
+  @SerializedName("device_id")
+  protected String deviceId;
+  private String scope = "user";
 
-  @SerializedName("access_token")
-  protected String accessToken;
-
-  @SerializedName("token_type")
-  protected String tokenType;
-
-  @SerializedName("mmx_app_id")
-  private String mmxAppId;
-
-  private String scope;
-
-  @SerializedName("config")
-  private Map<String, String> serverConfig;
-
-  public Long getExpiresIn() {
-    return expiresIn;
+  public RenewTokenRequest(String refreshToken) {
+    this.refreshToken = refreshToken;
+    this.clientId = MaxCore.getConfig().getClientId();
+    this.deviceId = Device.getCurrentDeviceId();
   }
 
-  public String getAccessToken() {
-    return accessToken;
+  public String getRefreshToken() {
+    return refreshToken;
   }
 
-  public String getTokenType() {
-    return tokenType;
+  public String getClientId() {
+    return clientId;
   }
 
-  public String getMmxAppId() {
-    return mmxAppId;
+  public String getGrantType() {
+    return grantType;
+  }
+
+  public String getDeviceId() {
+    return deviceId;
   }
 
   public String getScope() {
     return scope;
   }
-
-  public Map<String, String> getServerConfig() {
-    return serverConfig;
-  }
-
 }

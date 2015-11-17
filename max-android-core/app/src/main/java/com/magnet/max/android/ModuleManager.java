@@ -61,13 +61,13 @@ import java.util.concurrent.atomic.AtomicReference;
       configMap.putAll(MaxCore.getConfig().getAllConfigs());
     }
 
-    if(null != appTokenRef.get()) {
-      onAppLogout(MaxCore.getConfig().getClientId());
-    }
-
-    if(null != userTokenRef.get()) {
-      onUserLogout(User.getCurrentUserId());
-    }
+    //if(null != appTokenRef.get()) {
+    //  onAppLogout(MaxCore.getConfig().getClientId());
+    //}
+    //
+    //if(null != userTokenRef.get()) {
+    //  onUserLogout(User.getCurrentUserId());
+    //}
 
     if(null == registeredModules) {
       registeredModules = new HashMap<String, List<ModuleInfo>>();
@@ -161,6 +161,7 @@ import java.util.concurrent.atomic.AtomicReference;
       if(null != MaxCore.getConfig().getAllConfigs()) {
         configMap.putAll(MaxCore.getConfig().getAllConfigs());
       }
+      configMap.put("mmx-appId", appToken.getMmxAppId());
       configMap.putAll(serverConfig);
     }
 
@@ -196,6 +197,22 @@ import java.util.concurrent.atomic.AtomicReference;
       }
 
       tokenLocalStore.saveRememberMe(rememberMe);
+    } else {
+
+    }
+  }
+
+  public static void onUserTokenRefresh(final String userId, UserToken token) {
+    if(null != token) {
+      Log.i(TAG, "refresh user token success : ");
+
+      userTokenRef.set(token);
+
+      userIdRef.set(userId);
+
+      notifyUserTokenObservers();
+
+      tokenLocalStore.saveUserToken();
     } else {
 
     }
@@ -237,6 +254,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
   public static ApplicationToken getApplicationToken() {
     return appTokenRef.get();
+  }
+
+  public static UserToken getUserToken() {
+    return userTokenRef.get();
   }
 
   /**
@@ -323,6 +344,12 @@ import java.util.concurrent.atomic.AtomicReference;
   }
 
   private final static class TokenLocalStore {
+    public static final String KEY_APP_TOKEN = "appToken";
+    public static final String KEY_USER_ID = "userId";
+    public static final String KEY_USER_TOKEN = "userToken";
+    public static final String KEY_REFRESH_TOKEN = "userToken";
+    public static final String KEY_REMEMBER_ME = "rememberMe";
+
     private final SharedPreferences credentialStore;
     private final Gson gson;
 
@@ -334,10 +361,10 @@ import java.util.concurrent.atomic.AtomicReference;
     public void saveAppToken() {
       SharedPreferences.Editor editor = credentialStore.edit();
       if(null == appTokenRef.get()) {
-        editor.remove("appToken");
+        editor.remove(KEY_APP_TOKEN);
       } else {
         //editor.putString("appToken", encryptor.encryptString(gson.toJson(appTokenRef.get())));
-        editor.putString("appToken", gson.toJson(appTokenRef.get()));
+        editor.putString(KEY_APP_TOKEN, gson.toJson(appTokenRef.get()));
       }
       editor.commit();
 
@@ -348,17 +375,17 @@ import java.util.concurrent.atomic.AtomicReference;
     public void saveUserToken() {
       SharedPreferences.Editor editor = credentialStore.edit();
       if(null == userIdRef.get()) {
-        editor.remove("userId");
+        editor.remove(KEY_USER_ID);
       } else {
         //editor.putString("userId", encryptor.encryptString(userIdRef.get()));
-        editor.putString("userId", userIdRef.get());
+        editor.putString(KEY_USER_ID, userIdRef.get());
       }
 
       if(null == userTokenRef.get()) {
-        editor.remove("userToken");
+        editor.remove(KEY_USER_TOKEN);
       } else {
         //editor.putString("userToken", encryptor.encryptString(gson.toJson(userTokenRef.get())));
-        editor.putString("userToken", gson.toJson(userTokenRef.get()));
+        editor.putString(KEY_USER_TOKEN, gson.toJson(userTokenRef.get()));
       }
       editor.commit();
 
@@ -368,7 +395,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     public void saveRememberMe(boolean rememberMe) {
       SharedPreferences.Editor editor = credentialStore.edit();
-      editor.putBoolean("rememberMe", rememberMe);
+      editor.putBoolean(KEY_REMEMBER_ME, rememberMe);
       editor.commit();
 
       //Log.d(TAG, "-------------updating userName = " + userIdRef.get());
@@ -376,22 +403,27 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     public void loadCredentials() {
-      if(credentialStore.getBoolean("rememberMe", false)) {
-        userIdRef.set(credentialStore.getString("userId", null));
-        Log.d(TAG, "-------------credentials reloaded from local, userName = " + userIdRef.get());
-
-        String appTokenJson = credentialStore.getString("appToken", null);
-        if (null != appTokenJson) {
-          appTokenRef.set(gson.fromJson(appTokenJson, ApplicationToken.class));
+      String appTokenJson = credentialStore.getString(KEY_APP_TOKEN, null);
+      if (null != appTokenJson) {
+        ApplicationToken applicationToken = gson.fromJson(appTokenJson, ApplicationToken.class);
+        if(!applicationToken.isExpired()) {
+          appTokenRef.set(applicationToken);
 
           //Log.d(TAG, "-------------credentials reloaded from local appToken = " + appTokenRef.get()
           //    .getAccessToken());
 
           notifyAppTokenObservers();
+        } else {
+          Log.d(TAG, "Cached app token expired");
         }
+      }
 
-        String userTokenJson = credentialStore.getString("userToken", null);
+      if(credentialStore.getBoolean(KEY_REMEMBER_ME, false)) {
+        userIdRef.set(credentialStore.getString(KEY_USER_ID, null));
+        Log.d(TAG, "-------------credentials reloaded from local, userName = " + userIdRef.get());
+        String userTokenJson = credentialStore.getString(KEY_USER_TOKEN, null);
         if (null != userTokenJson) {
+
           userTokenRef.set(gson.fromJson(userTokenJson, UserToken.class));
 
           //Log.d(TAG,

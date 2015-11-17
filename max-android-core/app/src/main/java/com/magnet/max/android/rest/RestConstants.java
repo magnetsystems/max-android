@@ -8,4 +8,5 @@ public interface RestConstants {
   String APP_LOGIN_WITH_DEVICE_URL = "api/com.magnet.server/applications/session-device";
   String USER_LOGIN_URL = "api/com.magnet.server/user/session";
   String USER_LOGOUT_URL = "api/com.magnet.server/user/session";
+  String USER_REFRESH_TOKEN_URL = "api/com.magnet.server/user/newtoken";
 }

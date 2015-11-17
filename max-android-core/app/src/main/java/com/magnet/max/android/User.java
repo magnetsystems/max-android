@@ -94,7 +94,14 @@ final public class User {
         AuthUtil.generateBasicAuthToken(userName, password),
         new retrofit.Callback<UserLoginResponse>() {
           @Override public void onResponse(retrofit.Response<UserLoginResponse> response) {
-            Log.i(TAG, "userLogin success : ");
+            if(response.isSuccess()) {
+              Log.i(TAG, "userLogin success : ");
+            } else {
+              Log.e(TAG, "userLogin failed due to : " + response.message());
+              ApiCallbackHelper.executeCallback(callback, response);
+              return;
+            }
+
             UserLoginResponse userLoginResponse = response.body();
             boolean result = false;
 
@@ -103,9 +110,9 @@ final public class User {
             }
 
             if (null != userLoginResponse.getAccessToken()) {
-              ModuleManager.onUserLogin(getCurrentUserId(),
-                  new UserToken(userLoginResponse.getExpiresIn(),
-                      userLoginResponse.getAccessToken(), userLoginResponse.getTokenType()),
+              ModuleManager.onUserLogin(userLoginResponse.getUser().getUserIdentifier(),
+                  new UserToken(userLoginResponse.getExpiresIn(), userLoginResponse.getAccessToken(),
+                      userLoginResponse.getRefreshToken(), userLoginResponse.getTokenType()),
                   rememberMe);
 
               result = true;

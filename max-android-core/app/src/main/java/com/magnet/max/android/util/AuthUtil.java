@@ -20,6 +20,7 @@ import java.io.UnsupportedEncodingException;
 
 public class AuthUtil {
 
+  public static final String AUTHORIZATION_HEADER = "Authorization";
   public static final String AUTH_PREFIX_BASIC = "Basic ";
   public static final String AUTH_PREFIX_BEARER = "Bearer ";
 
@@ -37,5 +38,13 @@ public class AuthUtil {
 
   public static String generateOAuthToken(String token) {
     return AUTH_PREFIX_BEARER + token;
+  }
+
+  public static String extractOAuthToken(String authHeader) {
+    return StringUtil.isNotEmpty(authHeader) ? authHeader.substring(AUTH_PREFIX_BEARER.length()).trim() : null;
+  }
+
+  public static void handleAppLoginFailure() {
+    throw new RuntimeException("Application login failed, please check network status, clientId/secret or update your app");
   }
 }
