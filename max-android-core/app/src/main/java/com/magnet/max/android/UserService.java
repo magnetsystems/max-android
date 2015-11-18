@@ -71,6 +71,7 @@ import retrofit.http.Query;
    */
   @POST("/api/com.magnet.server/user/newtoken")
   MagnetCall<UserLoginResponse> renewToken (@Body RenewTokenRequest renewTokenRequest,
+      @Header("Authorization") String authorization,
       retrofit.Callback<UserLoginResponse> callback
   );
 

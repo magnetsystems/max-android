@@ -68,8 +68,8 @@ public class RequestInterceptor implements Interceptor {
 
     //Add auth token for network call
     String token = null;
-    if(!authTokenProvider.isAuthEnabled() || !authTokenProvider.isAuthRequired(request)
-        || null != authTokenProvider.getAppToken() || null != authTokenProvider.getUserToken()) {
+    if((authTokenProvider.isAuthEnabled() && authTokenProvider.isAuthRequired(request))
+        && (null != authTokenProvider.getAppToken() || null != authTokenProvider.getUserToken())) {
       String existingToken = request.header(AuthUtil.AUTHORIZATION_HEADER);
       if(null != existingToken && existingToken.startsWith("Basic")) {
         // Already has Basic Auth header, don't overwrite
@@ -145,17 +145,5 @@ public class RequestInterceptor implements Interceptor {
 
     //Log.i(TAG, "---------adding AuthHeaders : " + authToken);
     return authToken;
-  }
-
-  private boolean shouldNotify401(Request request) {
-    String requestPath = request.httpUrl().encodedPath();
-    if(requestPath.endsWith("/")) {
-      requestPath = requestPath.substring(0, requestPath.length() - 1);
-    }
-
-    return !(requestPath.endsWith(RestConstants.APP_LOGIN_URL)
-        || requestPath.endsWith(RestConstants.APP_LOGIN_WITH_DEVICE_URL)
-        || requestPath.endsWith(RestConstants.USER_LOGIN_URL)
-        || requestPath.endsWith(RestConstants.USER_LOGOUT_URL));
   }
 }

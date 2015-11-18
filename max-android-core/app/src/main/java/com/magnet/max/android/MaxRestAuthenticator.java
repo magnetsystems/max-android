@@ -173,7 +173,9 @@ public class MaxRestAuthenticator implements Authenticator {
     final UserToken userToken = ModuleManager.getUserToken();
     if(null != userToken && StringUtil.isNotEmpty(userToken.getRefreshToken())) {
       final CountDownLatch latch = new CountDownLatch(1);
-      getUserService().renewToken(new RenewTokenRequest(userToken.getRefreshToken()), new Callback<UserLoginResponse>() {
+      getUserService().renewToken(new RenewTokenRequest(userToken.getRefreshToken()),
+          AuthUtil.generateOAuthToken(userToken.getRefreshToken()),
+          new Callback<UserLoginResponse>() {
         @Override public void onResponse(retrofit.Response<UserLoginResponse> response) {
           if(response.isSuccess()) {
             Log.i(TAG, "renewToken success : ");

@@ -140,28 +140,31 @@ final public class User {
       return;
     }
 
-    final String currentUserId = getCurrentUserId();
+    // Only call server API when token is available
+    if(null != ModuleManager.getUserToken()) {
+      final String currentUserId = getCurrentUserId();
 
-    // Unregister device
-    Device.unRegister(null);
+      // Unregister device
+      Device.unRegister(null);
 
-    getUserService().userLogout(new Callback<Boolean>() {
-      @Override public void onResponse(Response<Boolean> response) {
-        Log.e(TAG, "user logout successfully : " + currentUserId);
+      getUserService().userLogout(new Callback<Boolean>() {
+        @Override public void onResponse(Response<Boolean> response) {
+          Log.e(TAG, "user logout successfully : " + currentUserId);
 
-        ModuleManager.onUserLogout(currentUserId);
+          ModuleManager.onUserLogout(currentUserId);
 
-        ApiCallbackHelper.executeCallback(callback, response);
-      }
+          ApiCallbackHelper.executeCallback(callback, response);
+        }
 
-      @Override public void onFailure(Throwable throwable) {
-        Log.e(TAG, "user logout error : " + throwable.getMessage());
+        @Override public void onFailure(Throwable throwable) {
+          Log.e(TAG, "user logout error : " + throwable.getMessage());
 
-        ModuleManager.onUserLogout(currentUserId);
+          ModuleManager.onUserLogout(currentUserId);
 
-        ApiCallbackHelper.executeCallback(callback, throwable);
-      }
-    }).executeInBackground();
+          ApiCallbackHelper.executeCallback(callback, throwable);
+        }
+      }).executeInBackground();
+    }
 
     sCurrentUserRef.set(null);
   }

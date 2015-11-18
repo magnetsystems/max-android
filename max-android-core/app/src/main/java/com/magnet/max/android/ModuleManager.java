@@ -244,6 +244,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
   public static void onUserTokenInvalid() {
     Log.w(TAG, "User token is invalid, notify modules");
+    // Clean up token first so User.logout won't call server APIs
+    ModuleManager.onUserLogout(User.getCurrentUserId());
     User.logout(null);
     notifyAuthFailure(Constants.USER_AUTH_CHALLENGE_INTENT_ACTION);
   }
