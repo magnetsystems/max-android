@@ -123,7 +123,7 @@ import retrofit.Response;
                     Log.i(TAG, "appCheckin success : ");
                   } else {
                     Log.e(TAG, "appCheckin failed due to : " + response.message());
-                    AuthUtil.handleAppLoginFailure();
+                    ModuleManager.onAppTokenInvalid();
                     return;
                   }
                   AppLoginWithDeviceResponse appCheckinResponse = response.body();
@@ -139,7 +139,7 @@ import retrofit.Response;
                 @Override public void onFailure(Throwable throwable) {
                   Log.e(TAG, "appCheckin error : " + throwable.getMessage());
                   // Throw a runtime exception since this is not a recoverable error
-                  AuthUtil.handleAppLoginFailure();
+                  ModuleManager.onAppTokenInvalid();
                 }
               });
       call.executeInBackground();

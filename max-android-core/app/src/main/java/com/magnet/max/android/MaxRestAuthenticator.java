@@ -155,9 +155,7 @@ public class MaxRestAuthenticator implements Authenticator {
 
       private void handleError(String errorMessage) {
         Log.e(TAG, "appCheckin failed due to : " + errorMessage);
-        // Reset app token
-        ModuleManager.onAppLogout(MaxCore.getConfig().getClientId());
-        AuthUtil.handleAppLoginFailure();
+        ModuleManager.onAppTokenInvalid();
       }
     }).executeInBackground();
 

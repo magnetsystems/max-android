@@ -43,8 +43,4 @@ public class AuthUtil {
   public static String extractOAuthToken(String authHeader) {
     return StringUtil.isNotEmpty(authHeader) ? authHeader.substring(AUTH_PREFIX_BEARER.length()).trim() : null;
   }
-
-  public static void handleAppLoginFailure() {
-    throw new RuntimeException("Application login failed, please check network status, clientId/secret or update your app");
-  }
 }

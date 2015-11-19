@@ -268,7 +268,18 @@ import java.util.concurrent.atomic.AtomicReference;
    * @param action
    */
   private static void notifyAuthFailure(String action) {
-    LocalBroadcastManager.getInstance(MaxCore.getApplicationContext()).sendBroadcast(new Intent(action));
+    Log.d(TAG, "No broadcast receiver registered for : " + action + ", throwing a runtime exception");
+    StringBuilder messageBuilder = new StringBuilder("\n-------------------------------------------------------------------\n");
+    if(Constants.USER_AUTH_CHALLENGE_INTENT_ACTION.equals(action)) {
+      messageBuilder.append("User token is invalid, please re-login");
+    } else {
+      messageBuilder.append("Application login failed, please check network status, clientId/secret or update your app");
+    }
+    messageBuilder.append("\n-------------------------------------------------------------------\n");
+    assert false :  messageBuilder.toString();
+
+    LocalBroadcastManager.getInstance(MaxCore.getApplicationContext())
+        .sendBroadcast(new Intent(action));
   }
 
   private static List<ModuleInfo> getAllRegisteredModules() {
