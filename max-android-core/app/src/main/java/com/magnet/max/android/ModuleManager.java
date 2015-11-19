@@ -20,6 +20,7 @@ import android.content.SharedPreferences;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.magnet.max.android.auth.model.ApplicationToken;
 import com.magnet.max.android.auth.model.DeviceInfo;
 import com.magnet.max.android.auth.model.UserToken;
@@ -39,8 +40,7 @@ import java.util.concurrent.atomic.AtomicReference;
   private static AtomicReference<ApplicationToken> appTokenRef = new AtomicReference<ApplicationToken>(null);
   private static AtomicReference<UserToken> userTokenRef = new AtomicReference<UserToken>(null);
   private static AtomicReference<String> userIdRef = new AtomicReference<String>(null);
-
-  private static Map<String, String> configMap;
+  private static AtomicReference<Map<String, String>> serverConfigsRef = new AtomicReference<>(null);
 
   private static TokenLocalStore tokenLocalStore;
 
@@ -52,22 +52,22 @@ import java.util.concurrent.atomic.AtomicReference;
       tokenLocalStore.loadCredentials();
     }
 
-    if(null == configMap) {
-      configMap = new HashMap<>();
+    if(null == serverConfigsRef.get()) {
+      serverConfigsRef.set(new HashMap<String, String>());
     } else {
-      configMap.clear();
+      serverConfigsRef.get().clear();
     }
     if(null != MaxCore.getConfig().getAllConfigs()) {
-      configMap.putAll(MaxCore.getConfig().getAllConfigs());
+      serverConfigsRef.get().putAll(MaxCore.getConfig().getAllConfigs());
     }
 
-    if(null != appTokenRef.get()) {
-      onAppLogout(MaxCore.getConfig().getClientId());
-    }
-
-    if(null != userTokenRef.get()) {
-      onUserLogout(User.getCurrentUserId());
-    }
+    //if(null != appTokenRef.get()) {
+    //  onAppLogout(MaxCore.getConfig().getClientId());
+    //}
+    //
+    //if(null != userTokenRef.get()) {
+    //  onUserLogout(User.getCurrentUserId());
+    //}
 
     if(null == registeredModules) {
       registeredModules = new HashMap<String, List<ModuleInfo>>();
@@ -107,7 +107,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     if(appTokenRef.get() != null) {
       Log.d(TAG, "--------appToken is availabe when register : " + appTokenRef.get());
-      module.onInit(MaxCore.getApplicationContext(), configMap, callback);
+      module.onInit(MaxCore.getApplicationContext(), serverConfigsRef.get(), callback);
       module.onAppTokenUpdate(appTokenRef.get().getAccessToken(), appTokenRef.get().getMmxAppId(),
           Device.getCurrentDeviceId());
     }
@@ -155,14 +155,7 @@ import java.util.concurrent.atomic.AtomicReference;
       tokenLocalStore.saveAppToken();
     }
 
-    // Update config
-    if(null != serverConfig) {
-      configMap.clear();
-      if(null != MaxCore.getConfig().getAllConfigs()) {
-        configMap.putAll(MaxCore.getConfig().getAllConfigs());
-      }
-      configMap.putAll(serverConfig);
-    }
+    onServerConfig(serverConfig);
 
     notifyConfigObservers();
   }
@@ -201,6 +194,22 @@ import java.util.concurrent.atomic.AtomicReference;
     }
   }
 
+  public static void onUserTokenRefresh(final String userId, UserToken token) {
+    if(null != token) {
+      Log.i(TAG, "refresh user token success : ");
+
+      userTokenRef.set(token);
+
+      userIdRef.set(userId);
+
+      notifyUserTokenObservers();
+
+      tokenLocalStore.saveUserToken();
+    } else {
+
+    }
+  }
+
   public static void onUserLogout(final String userId) {
     Log.i(TAG, "onUserLogout  : ");
 
@@ -227,6 +236,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
   public static void onUserTokenInvalid() {
     Log.w(TAG, "User token is invalid, notify modules");
+    // Clean up token first so User.logout won't call server APIs
+    ModuleManager.onUserLogout(User.getCurrentUserId());
     User.logout(null);
     notifyAuthFailure(Constants.USER_AUTH_CHALLENGE_INTENT_ACTION);
   }
@@ -235,8 +246,21 @@ import java.util.concurrent.atomic.AtomicReference;
     notifyAuthFailure(Constants.APP_AUTH_CHALLENGE_INTENT_ACTION);
   }
 
+  private static void onServerConfig(Map<String, String> serverConfigs) {
+    refreshServerConfigs(serverConfigs);
+    tokenLocalStore.saveServerConfigs();
+  }
+
   public static ApplicationToken getApplicationToken() {
     return appTokenRef.get();
+  }
+
+  public static UserToken getUserToken() {
+    return userTokenRef.get();
+  }
+
+  public static Map<String, String> getServerConfigs() {
+    return serverConfigsRef.get();
   }
 
   /**
@@ -244,7 +268,18 @@ import java.util.concurrent.atomic.AtomicReference;
    * @param action
    */
   private static void notifyAuthFailure(String action) {
-    LocalBroadcastManager.getInstance(MaxCore.getApplicationContext()).sendBroadcast(new Intent(action));
+    Log.d(TAG, "No broadcast receiver registered for : " + action + ", throwing a runtime exception");
+    StringBuilder messageBuilder = new StringBuilder("\n-------------------------------------------------------------------\n");
+    if(Constants.USER_AUTH_CHALLENGE_INTENT_ACTION.equals(action)) {
+      messageBuilder.append("User token is invalid, please re-login");
+    } else {
+      messageBuilder.append("Application login failed, please check network status, clientId/secret or update your app");
+    }
+    messageBuilder.append("\n-------------------------------------------------------------------\n");
+    assert false :  messageBuilder.toString();
+
+    LocalBroadcastManager.getInstance(MaxCore.getApplicationContext())
+        .sendBroadcast(new Intent(action));
   }
 
   private static List<ModuleInfo> getAllRegisteredModules() {
@@ -262,7 +297,7 @@ import java.util.concurrent.atomic.AtomicReference;
   private static void notifyConfigObservers() {
     for(ModuleInfo s : getAllRegisteredModules()) {
       Log.i(TAG, "notify onConfig for : " + s.getModule().getName());
-      s.getModule().onInit(MaxCore.getApplicationContext(), configMap, s.getCallback());
+      s.getModule().onInit(MaxCore.getApplicationContext(), serverConfigsRef.get(), s.getCallback());
     }
   }
 
@@ -304,6 +339,19 @@ import java.util.concurrent.atomic.AtomicReference;
     });
   }
 
+  private static void refreshServerConfigs(Map<String, String> newConfigs) {
+    if(null != newConfigs && !newConfigs.isEmpty()) {
+      serverConfigsRef.get().clear();
+      if(null != MaxCore.getConfig().getAllConfigs()) {
+        serverConfigsRef.get().putAll(MaxCore.getConfig().getAllConfigs());
+      }
+      if(null != appTokenRef.get()) {
+        serverConfigsRef.get().put("mmx-appId", appTokenRef.get().getMmxAppId());
+      }
+      serverConfigsRef.get().putAll(newConfigs);
+    }
+  }
+
   private static class ModuleInfo {
     private MaxModule module;
     private ApiCallback callback;
@@ -323,6 +371,12 @@ import java.util.concurrent.atomic.AtomicReference;
   }
 
   private final static class TokenLocalStore {
+    public static final String KEY_APP_TOKEN = "appToken";
+    public static final String KEY_USER_ID = "userId";
+    public static final String KEY_USER_TOKEN = "userToken";
+    public static final String KEY_SERVER_CONFIGS = "serverConfigs";
+    public static final String KEY_REMEMBER_ME = "rememberMe";
+
     private final SharedPreferences credentialStore;
     private final Gson gson;
 
@@ -334,10 +388,10 @@ import java.util.concurrent.atomic.AtomicReference;
     public void saveAppToken() {
       SharedPreferences.Editor editor = credentialStore.edit();
       if(null == appTokenRef.get()) {
-        editor.remove("appToken");
+        editor.remove(KEY_APP_TOKEN);
       } else {
         //editor.putString("appToken", encryptor.encryptString(gson.toJson(appTokenRef.get())));
-        editor.putString("appToken", gson.toJson(appTokenRef.get()));
+        editor.putString(KEY_APP_TOKEN, gson.toJson(appTokenRef.get()));
       }
       editor.commit();
 
@@ -348,17 +402,17 @@ import java.util.concurrent.atomic.AtomicReference;
     public void saveUserToken() {
       SharedPreferences.Editor editor = credentialStore.edit();
       if(null == userIdRef.get()) {
-        editor.remove("userId");
+        editor.remove(KEY_USER_ID);
       } else {
         //editor.putString("userId", encryptor.encryptString(userIdRef.get()));
-        editor.putString("userId", userIdRef.get());
+        editor.putString(KEY_USER_ID, userIdRef.get());
       }
 
       if(null == userTokenRef.get()) {
-        editor.remove("userToken");
+        editor.remove(KEY_USER_TOKEN);
       } else {
         //editor.putString("userToken", encryptor.encryptString(gson.toJson(userTokenRef.get())));
-        editor.putString("userToken", gson.toJson(userTokenRef.get()));
+        editor.putString(KEY_USER_TOKEN, gson.toJson(userTokenRef.get()));
       }
       editor.commit();
 
@@ -368,30 +422,50 @@ import java.util.concurrent.atomic.AtomicReference;
 
     public void saveRememberMe(boolean rememberMe) {
       SharedPreferences.Editor editor = credentialStore.edit();
-      editor.putBoolean("rememberMe", rememberMe);
+      editor.putBoolean(KEY_REMEMBER_ME, rememberMe);
       editor.commit();
 
       //Log.d(TAG, "-------------updating userName = " + userIdRef.get());
       //Log.d(TAG, "-------------updating userToken = " + userTokenRef.get().getAccessToken());
     }
 
-    public void loadCredentials() {
-      if(credentialStore.getBoolean("rememberMe", false)) {
-        userIdRef.set(credentialStore.getString("userId", null));
-        Log.d(TAG, "-------------credentials reloaded from local, userName = " + userIdRef.get());
+    public void saveServerConfigs() {
+      SharedPreferences.Editor editor = credentialStore.edit();
+      if(!serverConfigsRef.get().isEmpty()) {
+        editor.putString(KEY_SERVER_CONFIGS, gson.toJson(serverConfigsRef.get()));
+      } else {
+        editor.remove(KEY_SERVER_CONFIGS);
+      }
+      editor.commit();
+    }
 
-        String appTokenJson = credentialStore.getString("appToken", null);
-        if (null != appTokenJson) {
-          appTokenRef.set(gson.fromJson(appTokenJson, ApplicationToken.class));
+    public void loadCredentials() {
+      String appTokenJson = credentialStore.getString(KEY_APP_TOKEN, null);
+      if (null != appTokenJson) {
+        ApplicationToken applicationToken = gson.fromJson(appTokenJson, ApplicationToken.class);
+        if(!applicationToken.isExpired()) {
+          appTokenRef.set(applicationToken);
 
           //Log.d(TAG, "-------------credentials reloaded from local appToken = " + appTokenRef.get()
           //    .getAccessToken());
 
           notifyAppTokenObservers();
+        } else {
+          Log.d(TAG, "Cached app token expired");
         }
+      }
 
-        String userTokenJson = credentialStore.getString("userToken", null);
+      String serverConfigsJson = credentialStore.getString(KEY_SERVER_CONFIGS, null);
+      if(null != serverConfigsJson) {
+        serverConfigsRef.set((Map<String, String>) gson.fromJson(serverConfigsJson, new TypeToken<Map<String, String>>(){}.getType()));
+      }
+
+      if(credentialStore.getBoolean(KEY_REMEMBER_ME, false)) {
+        userIdRef.set(credentialStore.getString(KEY_USER_ID, null));
+        Log.d(TAG, "-------------credentials reloaded from local, userName = " + userIdRef.get());
+        String userTokenJson = credentialStore.getString(KEY_USER_TOKEN, null);
         if (null != userTokenJson) {
+
           userTokenRef.set(gson.fromJson(userTokenJson, UserToken.class));
 
           //Log.d(TAG,

@@ -32,6 +32,12 @@ public class ApplicationToken extends BaseToken {
   @SerializedName("mmx_app_id")
   private String mmxAppId;
 
+  public ApplicationToken(Long expiresIn, String accessToken, String tokenType, String scope, String mmxAppId) {
+    super(expiresIn, accessToken, tokenType, null, null);
+    this.scope = scope;
+    this.mmxAppId = mmxAppId;
+  }
+
   public String getScope() {
     return scope;
   }

@@ -20,6 +20,7 @@
  */
 package com.magnet.max.android;
 
+import com.magnet.max.android.auth.model.RenewTokenRequest;
 import com.magnet.max.android.auth.model.UpdateProfileRequest;
 import com.magnet.max.android.auth.model.UserLoginResponse;
 import com.magnet.max.android.auth.model.UserRegistrationInfo;
@@ -39,7 +40,7 @@ import retrofit.http.Query;
   /**
    *
    * POST /api/user/session
-   * @param grant_type style:Field optional:false
+   * @param grantType style:Field optional:false
    * @param username style:Field optional:false
    * @param password style:Field optional:false
    * @param client_id style:Field optional:false
@@ -51,13 +52,25 @@ import retrofit.http.Query;
    */
   @POST("/api/com.magnet.server/user/session") @FormUrlEncoded
   MagnetCall<UserLoginResponse> userLogin (
-      @Field("grant_type") String grant_type,
+      @Field("grant_type") String grantType,
       @Field("username") String username,
       @Field("password") String password,
       @Field("client_id") String client_id,
       @Field("scope") String scope,
       @Field("remember_me") Boolean remember_me,
       @Header("MMS-DEVICE-ID") String mMSDEVICEID,
+      @Header("Authorization") String authorization,
+      retrofit.Callback<UserLoginResponse> callback
+  );
+
+  /**
+   *
+   * POST /api/user/newtoken
+   * @param renewTokenRequest style:Body optional:false
+   * @param callback asynchronous callback
+   */
+  @POST("/api/com.magnet.server/user/newtoken")
+  MagnetCall<UserLoginResponse> renewToken (@Body RenewTokenRequest renewTokenRequest,
       @Header("Authorization") String authorization,
       retrofit.Callback<UserLoginResponse> callback
   );

@@ -18,7 +18,7 @@ package com.magnet.max.android;
 import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
-import com.magnet.max.android.auth.model.AppLoginResponse;
+import com.magnet.max.android.auth.model.AppLoginWithDeviceResponse;
 import com.magnet.max.android.auth.model.ApplicationToken;
 import com.magnet.max.android.auth.model.DeviceInfo;
 import com.magnet.max.android.config.MaxAndroidConfig;
@@ -72,69 +72,78 @@ import retrofit.Response;
   }
 
   private void init() {
-    if(null == applicationService) {
+    if (null == applicationService) {
       applicationService = restAdapter.create(ApplicationService.class);
     }
 
-    if(TextUtils.isEmpty(config.getClientId())) {
+    if (TextUtils.isEmpty(config.getClientId())) {
       Log.e(TAG, "ClientId is not set");
       return;
     }
 
     // Check if cached token is valid
     final ApplicationToken applicationTokenCache = ModuleManager.getApplicationToken();
-    if(null != applicationTokenCache && !applicationTokenCache.isAboutToExpireInMinutes(30)) {
+    if (null != applicationTokenCache && !applicationTokenCache.isAboutToExpireInMinutes(30)) {
       Log.i(TAG, "Using cached application token");
 
       applicationService.getMobileConfig(new Callback<Map<String, String>>() {
         @Override public void onResponse(Response<Map<String, String>> response) {
-          handleAppLogin(applicationTokenCache, response.body(), applicationTokenCache.getMmxAppId());
+          if(response.isSuccess()) {
+            ModuleManager.onAppLogin(config.getClientId(), applicationTokenCache,
+                response.isSuccess() ? response.body() : null);
+          } else {
+            handleMobileConfigError(response.message());
+          }
         }
 
         @Override public void onFailure(Throwable throwable) {
-          Log.e(TAG, "Failed to getMobileConfig due to : " + throwable.getMessage());
+          handleMobileConfigError(throwable.getMessage());
+        }
+
+        private void handleMobileConfigError(String message) {
+          Log.e(TAG, "Failed to getMobileConfig due to : " + message);
+          if(!ModuleManager.getServerConfigs().isEmpty()) {
+            Log.i(TAG, "Using cached mobile config");
+            ModuleManager.onAppLogin(config.getClientId(), applicationTokenCache,
+                ModuleManager.getServerConfigs());
+          } else {
+            Log.e(TAG, "No mobile configs available");
+          }
         }
       }).executeInBackground();
+    } else {
+      // Reset app token
+      ModuleManager.onAppLogout(config.getClientId());
 
-      return;
+      String authHeader = AuthUtil.generateBasicAuthToken(config.getClientId(), config.getClientSecret());
+      MagnetCall<AppLoginWithDeviceResponse> call =
+          applicationService.checkInWithDevice(authHeader, new DeviceInfo.Builder().build(), new retrofit.Callback<AppLoginWithDeviceResponse>() {
+                @Override public void onResponse(retrofit.Response<AppLoginWithDeviceResponse> response) {
+                  if (response.isSuccess()) {
+                    Log.i(TAG, "appCheckin success : ");
+                  } else {
+                    Log.e(TAG, "appCheckin failed due to : " + response.message());
+                    ModuleManager.onAppTokenInvalid();
+                    return;
+                  }
+                  AppLoginWithDeviceResponse appCheckinResponse = response.body();
+
+                  if (null != appCheckinResponse.getDevice()) {
+                    //TODO : save as current device?
+                  }
+
+                  ModuleManager.onAppLogin(config.getClientId(), appCheckinResponse.getApplicationToken(),
+                      appCheckinResponse.getServerConfig());
+                }
+
+                @Override public void onFailure(Throwable throwable) {
+                  Log.e(TAG, "appCheckin error : " + throwable.getMessage());
+                  // Throw a runtime exception since this is not a recoverable error
+                  ModuleManager.onAppTokenInvalid();
+                }
+              });
+      call.executeInBackground();
     }
-
-    // Reset app token
-    ModuleManager.onAppLogout(config.getClientId());
-
-    String authHeader = AuthUtil.generateBasicAuthToken(config.getClientId(), config.getClientSecret());
-    MagnetCall<AppLoginResponse> call = applicationService.checkInWithDevice(authHeader, new DeviceInfo.Builder().build(), new retrofit.Callback<AppLoginResponse>() {
-          @Override public void onResponse(retrofit.Response<AppLoginResponse> response) {
-            Log.i(TAG, "appCheckin success : ");
-            AppLoginResponse appCheckinResponse = response.body();
-
-
-            if(null != appCheckinResponse.getDevice()) {
-              //TODO : save as current device?
-            }
-
-            handleAppLogin(appCheckinResponse.getApplicationToken(),
-                appCheckinResponse.getServerConfig(),
-                appCheckinResponse.getApplicationToken().getMmxAppId());
-          }
-
-          @Override public void onFailure(Throwable throwable) {
-            Log.e(TAG, "appCheckin error : " + throwable.getMessage());
-            // Throw a runtime exception since this is not a recoverable error
-            throw new RuntimeException("Application login failed, please check clientId and secret or update your app");
-          }
-        });
-    call.executeInBackground();
-  }
-
-  private void handleAppLogin(ApplicationToken appToken, Map<String, String> configMap,
-      String mmxAppId) {
-    Map<String, String> serverConfig = new HashMap<String, String>();
-    serverConfig.put("mmx-appId", mmxAppId);
-    if(null != configMap) {
-      serverConfig.putAll(configMap);
-    }
-    ModuleManager.onAppLogin(config.getClientId(), appToken, serverConfig);
   }
 
   /**

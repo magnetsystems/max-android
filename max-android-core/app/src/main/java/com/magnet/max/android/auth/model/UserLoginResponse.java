@@ -32,6 +32,9 @@ public class UserLoginResponse {
   @SerializedName("access_token")
   private String accessToken;
 
+  @SerializedName("refresh_token")
+  protected String refreshToken;
+
   @SerializedName("token_type")
   private String tokenType;
 
@@ -47,6 +50,10 @@ public class UserLoginResponse {
 
   public String getAccessToken() {
     return accessToken;
+  }
+
+  public String getRefreshToken() {
+    return refreshToken;
   }
 
   public void setAccessToken(String accessToken) {

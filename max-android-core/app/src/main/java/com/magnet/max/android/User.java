@@ -94,7 +94,14 @@ final public class User {
         AuthUtil.generateBasicAuthToken(userName, password),
         new retrofit.Callback<UserLoginResponse>() {
           @Override public void onResponse(retrofit.Response<UserLoginResponse> response) {
-            Log.i(TAG, "userLogin success : ");
+            if(response.isSuccess()) {
+              Log.i(TAG, "userLogin success : ");
+            } else {
+              Log.e(TAG, "userLogin failed due to : " + response.message());
+              ApiCallbackHelper.executeCallback(callback, response);
+              return;
+            }
+
             UserLoginResponse userLoginResponse = response.body();
             boolean result = false;
 
@@ -103,9 +110,9 @@ final public class User {
             }
 
             if (null != userLoginResponse.getAccessToken()) {
-              ModuleManager.onUserLogin(getCurrentUserId(),
-                  new UserToken(userLoginResponse.getExpiresIn(),
-                      userLoginResponse.getAccessToken(), userLoginResponse.getTokenType()),
+              ModuleManager.onUserLogin(userLoginResponse.getUser().getUserIdentifier(),
+                  new UserToken(userLoginResponse.getExpiresIn(), userLoginResponse.getAccessToken(),
+                      userLoginResponse.getRefreshToken(), userLoginResponse.getTokenType()),
                   rememberMe);
 
               result = true;
@@ -124,37 +131,48 @@ final public class User {
   }
 
   /**
-   * User logout
+   * User logout without callback
+   */
+  public static void logout() {
+    logout(null);
+  }
+  /**
+   * User logout with callback
    * @param callback
    */
   public static void logout(final ApiCallback<Boolean> callback) {
     if(null == sCurrentUserRef.get()) {
-      callback.failure(new ApiError("User has not login"));
+      ApiCallbackHelper.executeCallback(callback, new ApiError("User has not login"));
       return;
     }
 
-    final String currentUserId = getCurrentUserId();
+    // Only call server API when token is available
+    if(null != ModuleManager.getUserToken()) {
+      final String currentUserId = getCurrentUserId();
 
-    // Unregister device
-    Device.unRegister(null);
+      // Unregister device
+      Device.unRegister(null);
 
-    getUserService().userLogout(new Callback<Boolean>() {
-      @Override public void onResponse(Response<Boolean> response) {
-        Log.e(TAG, "user logout successfully : " + currentUserId);
+      getUserService().userLogout(new Callback<Boolean>() {
+        @Override public void onResponse(Response<Boolean> response) {
+          Log.e(TAG, "user logout successfully : " + currentUserId);
 
-        ModuleManager.onUserLogout(currentUserId);
+          ModuleManager.onUserLogout(currentUserId);
 
-        ApiCallbackHelper.executeCallback(callback, response);
-      }
+          ApiCallbackHelper.executeCallback(callback, response);
+        }
 
-      @Override public void onFailure(Throwable throwable) {
-        Log.e(TAG, "user logout error : " + throwable.getMessage());
+        @Override public void onFailure(Throwable throwable) {
+          Log.e(TAG, "user logout error : " + throwable.getMessage());
 
-        ModuleManager.onUserLogout(currentUserId);
+          ModuleManager.onUserLogout(currentUserId);
 
-        ApiCallbackHelper.executeCallback(callback, throwable);
-      }
-    }).executeInBackground();
+          ApiCallbackHelper.executeCallback(callback, throwable);
+        }
+      }).executeInBackground();
+    } else {
+      ApiCallbackHelper.executeCallback(callback, Response.success(true));
+    }
 
     sCurrentUserRef.set(null);
   }
@@ -191,9 +209,7 @@ final public class User {
       }
 
       @Override public void onFailure(Throwable throwable) {
-        if (null != callback) {
-          callback.failure(new ApiError(throwable));
-        }
+        ApiCallbackHelper.executeCallback(callback, throwable);
       }
     }).executeInBackground();
   }

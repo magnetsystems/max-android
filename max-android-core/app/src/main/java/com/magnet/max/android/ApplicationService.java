@@ -21,6 +21,7 @@
 package com.magnet.max.android;
 
 import com.magnet.max.android.auth.model.AppLoginResponse;
+import com.magnet.max.android.auth.model.AppLoginWithDeviceResponse;
 import com.magnet.max.android.auth.model.DeviceInfo;
 import java.util.Map;
 import retrofit.MagnetCall;
@@ -33,7 +34,8 @@ import retrofit.http.*;
    * POST /api/applications/session
    * @param callback asynchronous callback
    */
-  @POST("/api/com.magnet.server/applications/session") MagnetCall<AppLoginResponse> appCheckin(@Header("MMS-DEVICE-ID") String deviceId,
+  @POST("/api/com.magnet.server/applications/session")
+  MagnetCall<AppLoginResponse> appCheckin(@Header("MMS-DEVICE-ID") String deviceId,
       @Header("Authorization") String authorization,
       retrofit.Callback<AppLoginResponse> callback);
 
@@ -44,10 +46,10 @@ import retrofit.http.*;
    * @param callback asynchronous callback
    */
   @POST("/api/com.magnet.server/applications/session-device")
-  MagnetCall<AppLoginResponse> checkInWithDevice(
+  MagnetCall<AppLoginWithDeviceResponse> checkInWithDevice(
       @Header("Authorization") String authorization,
       @Body DeviceInfo deviceInfo,
-      retrofit.Callback<AppLoginResponse> callback
+      retrofit.Callback<AppLoginWithDeviceResponse> callback
   );
 
   /**

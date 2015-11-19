@@ -15,12 +15,17 @@
  */
 package com.magnet.max.android.tests.auth;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.support.v4.content.LocalBroadcastManager;
 import android.test.AndroidTestCase;
 import android.test.suitebuilder.annotation.MediumTest;
 import android.util.Log;
 import com.magnet.max.android.ApiCallback;
 import com.magnet.max.android.ApiError;
+import com.magnet.max.android.Constants;
 import com.magnet.max.android.MaxCore;
 import com.magnet.max.android.MaxModule;
 import com.magnet.max.android.User;
@@ -40,10 +45,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
   private static final String TAG = OauthIntegrationTest.class.getSimpleName();
 
+  private static final int WAIT_TIME_SECONDS = 5;
+
   private CountDownLatch onInitSignal = new CountDownLatch(1);
   private CountDownLatch onAppTokenSignal = new CountDownLatch(1);
   private CountDownLatch onUserTokenSignal = new CountDownLatch(1);
   private CountDownLatch onUserTokenInvalidSignal = new CountDownLatch(1);
+  private BroadcastReceiver appTokenBroadcastReceiver;
+  private BroadcastReceiver userTokenBroadcastReceiver;
 
   @Override
   protected void setUp() throws Exception {
@@ -52,10 +61,31 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
     MaxAndroidConfig config = new MaxAndroidJsonConfig(getContext(), R.raw.keys);
     //magnetServiceHttpAdapter = new MagnetServiceAdapter.Builder().config(config).applicationContext(getContext()).build();
     MaxCore.init(getContext(), config);
+
+    appTokenBroadcastReceiver = new BroadcastReceiver() {
+      @Override public void onReceive(Context context, Intent intent) {
+        fail(intent.getAction());
+      }
+    };
+    LocalBroadcastManager.getInstance(getContext()).registerReceiver(appTokenBroadcastReceiver, new IntentFilter(
+        Constants.APP_AUTH_CHALLENGE_INTENT_ACTION));
+
+    userTokenBroadcastReceiver = new BroadcastReceiver() {
+      @Override public void onReceive(Context context, Intent intent) {
+        fail(intent.getAction());
+      }
+    };
+    LocalBroadcastManager.getInstance(getContext()).registerReceiver(appTokenBroadcastReceiver, new IntentFilter(
+        Constants.USER_AUTH_CHALLENGE_INTENT_ACTION));
+  }
+
+  @Override
+  protected void tearDown() {
+    LocalBroadcastManager.getInstance(getContext()).unregisterReceiver(appTokenBroadcastReceiver);
+    LocalBroadcastManager.getInstance(getContext()).unregisterReceiver(userTokenBroadcastReceiver);
   }
 
   @MediumTest
-  //@Suppress
   public void testMagnetServiceCreation() throws InterruptedException {
     MaxModule service = this;
 
@@ -70,11 +100,11 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
       }
     });
     assertEquals(this.getClass().getSimpleName(), service.getName());
-    initCallbackSignal.await(5, TimeUnit.SECONDS);
+    initCallbackSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     assertEquals(0, initCallbackSignal.getCount());
     assertEquals(0, onInitSignal.getCount());
 
-    onAppTokenSignal.await(5, TimeUnit.SECONDS);
+    onAppTokenSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     assertEquals(0, onAppTokenSignal.getCount());
     assertEquals(1, onUserTokenSignal.getCount());
 
@@ -100,12 +130,12 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
       }
     });
 
-    userRegSignal.await(4, TimeUnit.SECONDS);
+    userRegSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     assertEquals(0, userRegSignal.getCount());
 
     final CountDownLatch loginSignal = new CountDownLatch(1);
     assertNull(User.getCurrentUser());
-    User.login(userName, "password", false, new ApiCallback<Boolean>() {
+    User.login(userName, "password", true, new ApiCallback<Boolean>() {
       @Override public void success(Boolean aBoolean) {
         assertTrue(aBoolean);
         assertNotNull(User.getCurrentUser());
@@ -121,14 +151,14 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
       }
     });
 
-    //onInitSignal.await(5, TimeUnit.SECONDS);
+    //onInitSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     //assertEquals(0, onInitSignal.getCount());
-    //onAppTokenSignal.await(5, TimeUnit.SECONDS);
+    //onAppTokenSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     //assertEquals(0, onAppTokenSignal.getCount());
-    onUserTokenSignal.await(4, TimeUnit.SECONDS);
+    onUserTokenSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     assertEquals(0, onUserTokenSignal.getCount());
 
-    loginSignal.await(4, TimeUnit.SECONDS);
+    loginSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     assertEquals(0, loginSignal.getCount());
 
     final CountDownLatch updateProfileSignal = new CountDownLatch(1);
@@ -145,7 +175,7 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
         fail("updateProfile failed : " + error.getMessage());
       }
     });
-    updateProfileSignal.await(400, TimeUnit.SECONDS);
+    updateProfileSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     assertEquals(0, updateProfileSignal.getCount());
 
     //final CountDownLatch userSearchSignal = new CountDownLatch(1);
@@ -160,7 +190,7 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
     //    fail("user search failed : " + error.getMessage());
     //  }
     //});
-    //userSearchSignal.await(4, TimeUnit.SECONDS);
+    //userSearchSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     //assertEquals(0, userRegSignal.getCount());
 
     final CountDownLatch logoutSignal = new CountDownLatch(1);
@@ -173,10 +203,10 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
 
       }
     });
-    logoutSignal.await(4, TimeUnit.SECONDS);
+    logoutSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     assertEquals(0, logoutSignal.getCount());
 
-    onUserTokenInvalidSignal.await(4, TimeUnit.SECONDS);
+    onUserTokenInvalidSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     assertEquals(0, onUserTokenInvalidSignal.getCount());
 
     //MagnetService2 service2 = getServiceAdapter().create(MagnetService2.class);

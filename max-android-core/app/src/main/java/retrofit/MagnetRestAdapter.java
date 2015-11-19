@@ -20,6 +20,7 @@ import android.content.Context;
 import android.util.Log;
 import com.magnet.max.android.ApiCallback;
 import com.magnet.max.android.MaxModule;
+import com.magnet.max.android.MaxRestAuthenticator;
 import com.magnet.max.android.auth.AuthTokenProvider;
 import com.magnet.max.android.connectivity.ConnectivityManager;
 import com.magnet.max.android.rest.MagnetCallAdapter;
@@ -132,6 +133,8 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
 
     this.requestInterceptor = new RequestInterceptor(this, requestManager);
     client.interceptors().add(requestInterceptor);
+
+    client.setAuthenticator(new MaxRestAuthenticator());
   }
 
   private AtomicReference<String> appTokenRef = new AtomicReference<String>(null);
@@ -267,7 +270,8 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
 
   @Override public boolean isAuthRequired(Request request) {
     if("POST".equals(request.method()) && (request.urlString().endsWith(RestConstants.APP_LOGIN_URL)
-    || request.urlString().endsWith(RestConstants.APP_LOGIN_WITH_DEVICE_URL))) {
+    || request.urlString().endsWith(RestConstants.APP_LOGIN_WITH_DEVICE_URL)
+    || request.urlString().endsWith(RestConstants.USER_REFRESH_TOKEN_URL))) {
       return false;
     }
     return true;
