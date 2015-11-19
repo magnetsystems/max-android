@@ -92,12 +92,23 @@ import retrofit.Response;
             ModuleManager.onAppLogin(config.getClientId(), applicationTokenCache,
                 response.isSuccess() ? response.body() : null);
           } else {
-            Log.e(TAG, "Failed to getMobileConfig due to : " + response.message());
+            handleMobileConfigError(response.message());
           }
         }
 
         @Override public void onFailure(Throwable throwable) {
-          Log.e(TAG, "Failed to getMobileConfig due to : " + throwable.getMessage());
+          handleMobileConfigError(throwable.getMessage());
+        }
+
+        private void handleMobileConfigError(String message) {
+          Log.e(TAG, "Failed to getMobileConfig due to : " + message);
+          if(!ModuleManager.getServerConfigs().isEmpty()) {
+            Log.i(TAG, "Using cached mobile config");
+            ModuleManager.onAppLogin(config.getClientId(), applicationTokenCache,
+                ModuleManager.getServerConfigs());
+          } else {
+            Log.e(TAG, "No mobile configs available");
+          }
         }
       }).executeInBackground();
     } else {
