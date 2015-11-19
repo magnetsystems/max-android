@@ -170,6 +170,8 @@ final public class User {
           ApiCallbackHelper.executeCallback(callback, throwable);
         }
       }).executeInBackground();
+    } else {
+      ApiCallbackHelper.executeCallback(callback, Response.success(true));
     }
 
     sCurrentUserRef.set(null);
