@@ -131,7 +131,13 @@ final public class User {
   }
 
   /**
-   * User logout
+   * User logout without callback
+   */
+  public static void logout() {
+    logout(null);
+  }
+  /**
+   * User logout with callback
    * @param callback
    */
   public static void logout(final ApiCallback<Boolean> callback) {
