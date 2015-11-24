@@ -167,14 +167,16 @@ public abstract class Attachment<T> {
     }
   }
 
-  public void download(final AttachmentTrasferLister lister) {
+  public void download(final AttachmentTrasferLister listener) {
     if(StringUtil.isEmpty(attachmentId)) {
       throw new IllegalStateException("AttachmentId is not available");
     }
 
     if(status == Status.COMPLETE || status == Status.INLINE) {
       // Already downloaded
-      lister.onComplete(this);
+      if (null != listener) {
+        listener.onComplete(this);
+      }
     } else if(status == Status.INIT) {
       getAttachmentService().download(attachmentId, new Callback<byte[]>() {
         @Override public void onResponse(Response<byte[]> response) {
@@ -182,8 +184,8 @@ public abstract class Attachment<T> {
             data = response.body();
             length = data.length;
             status = Status.COMPLETE;
-            if (null != lister) {
-              lister.onComplete(Attachment.this);
+            if (null != listener) {
+              listener.onComplete(Attachment.this);
             }
           } else {
             handleError(new Exception(response.message()));
@@ -197,8 +199,8 @@ public abstract class Attachment<T> {
         private void handleError(Throwable throwable) {
           Log.d(TAG,
               "Failed to download attachment " + name, throwable);
-          if (null != lister) {
-            lister.onError(Attachment.this, throwable);
+          if (null != listener) {
+            listener.onError(Attachment.this, throwable);
           }
         }
       }).executeInBackground();
