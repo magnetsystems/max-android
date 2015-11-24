@@ -114,15 +114,20 @@ public abstract class Attachment<T> {
     return length;
   }
 
-  public void upload(final AttachmentTrasferLister lister) {
+  public void upload(final AttachmentTrasferLister listener) {
     if(StringUtil.isNotEmpty(attachmentId)) {
       // Already uploaded
       Log.d(TAG, "Aready uploaded");
-      lister.onComplete(this);
+      if(null != listener) {
+        listener.onComplete(this);
+      }
       return;
     }
 
     if(status == Status.INIT) {
+      if(null != listener) {
+        listener.onStart(this);
+      }
       getAttachmentService().upload(
           RequestBody.create(MediaType.parse(getMimeType()), getAsBytes()),
           new Callback<String>() {
@@ -132,8 +137,8 @@ public abstract class Attachment<T> {
                 if (StringUtil.isNotEmpty(result)) {
                   attachmentId = result;
                   status = Status.COMPLETE;
-                  if (null != lister) {
-                    lister.onComplete(Attachment.this);
+                  if (null != listener) {
+                    listener.onComplete(Attachment.this);
                   }
                 } else {
                   handleError(new Exception("Can't attachmentId from response"));
@@ -150,8 +155,8 @@ public abstract class Attachment<T> {
             private void handleError(Throwable throwable) {
               Log.d(TAG,
                   "Failed to upload attachment " + name, throwable);
-              if (null != lister) {
-                lister.onError(Attachment.this, throwable);
+              if (null != listener) {
+                listener.onError(Attachment.this, throwable);
               }
             }
           }).executeInBackground();
