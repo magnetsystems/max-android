@@ -29,18 +29,13 @@ import com.magnet.max.android.Constants;
 import com.magnet.max.android.MaxCore;
 import com.magnet.max.android.MaxModule;
 import com.magnet.max.android.User;
-import com.magnet.max.android.attachment.Attachment;
-import com.magnet.max.android.attachment.BytesAttachment;
-import com.magnet.max.android.attachment.FileAttachment;
-import com.magnet.max.android.attachment.InputStreamAttachment;
-import com.magnet.max.android.attachment.TextAttachment;
+import com.magnet.max.android.Attachment;
 import com.magnet.max.android.auth.model.UpdateProfileRequest;
 import com.magnet.max.android.auth.model.UserRealm;
 import com.magnet.max.android.auth.model.UserRegistrationInfo;
 import com.magnet.max.android.config.MaxAndroidConfig;
 import com.magnet.max.android.tests.R;
 import com.magnet.max.android.tests.utils.MaxAndroidJsonConfig;
-import java.io.File;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -200,8 +195,8 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
     //assertEquals(0, userRegSignal.getCount());
 
     //AttachmentService attachmentService = MaxCore.create(AttachmentService.class);
-    Attachment attachment = new InputStreamAttachment("image/jpeg", getContext().getResources().openRawResource(
-        R.raw.test_image));
+    Attachment attachment = new Attachment(getContext().getResources().openRawResource(
+        R.raw.test_image), "image/jpeg");
     //Attachment attachment2 = new FileAttachment("image/jpeg", new File("path"));
     //Attachment attachment3 = new BytesAttachment("image/jpeg", new byte[] {});
     //Attachment attachment4 = new TextAttachment("text/html", "<html></html>");
@@ -213,9 +208,9 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
 
       }
 
-      @Override public void onProgress(Attachment attachment, long processedBytes) {
-
-      }
+      //@Override public void onProgress(Attachment attachment, long processedBytes) {
+      //
+      //}
 
       @Override public void onComplete(Attachment attachment) {
         uploadSignal.countDown();

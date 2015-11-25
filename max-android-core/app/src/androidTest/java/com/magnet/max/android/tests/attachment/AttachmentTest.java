@@ -21,31 +21,26 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.magnet.max.android.tests.R;
-import com.magnet.max.android.attachment.Attachment;
-import com.magnet.max.android.attachment.BytesAttachment;
-import com.magnet.max.android.attachment.FileAttachment;
-import com.magnet.max.android.attachment.InputStreamAttachment;
-import com.magnet.max.android.attachment.TextAttachment;
-import java.io.File;
+import com.magnet.max.android.Attachment;
 import java.util.Arrays;
 import java.util.List;
-import junit.framework.TestCase;
 
 public class AttachmentTest extends AndroidTestCase {
 
   public void testMarshalling() {
-    Attachment attachment1 = new InputStreamAttachment("image/jpeg", getContext().getResources().openRawResource(
-        R.raw.test_image));
-    Attachment attachment2 = new FileAttachment("image/jpeg", new File("path"));
-    Attachment attachment3 = new BytesAttachment("image/jpeg", new byte[] {});
-    Attachment attachment4 = new TextAttachment("text/html", "<html></html>");
+    Attachment attachment1 = new Attachment(getContext().getResources().openRawResource(
+        R.raw.test_image), "image/jpeg", null, null);
+    //Attachment attachment2 = new Attachment(new File("path"), "image/jpeg", null, null);
+    Attachment attachment3 = new Attachment(new byte[] {0,1,2}, "image/jpeg", null, null);
+    Attachment attachment4 = new Attachment("<html></html>", "text/html", null, null, null);
 
-    List<Attachment> attachments = Arrays.asList(attachment1, attachment2, attachment3, attachment4);
+    List<Attachment> attachments = Arrays.asList(attachment1, attachment3, attachment4);
 
     Gson gson = new GsonBuilder().create();
     String jsonStr = gson.toJson(attachments);
 
     List<Attachment> attachmentRecovered = gson.fromJson(jsonStr, new TypeToken<List<Attachment>>() {}.getType());
-    assertEquals(4, attachmentRecovered.size());
+    assertEquals(3, attachmentRecovered.size());
+    assertEquals("image/jpeg", attachmentRecovered.get(0).getMimeType());
   }
 }
