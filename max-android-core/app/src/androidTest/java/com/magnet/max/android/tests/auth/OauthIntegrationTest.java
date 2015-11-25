@@ -206,6 +206,7 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
     //Attachment attachment3 = new BytesAttachment("image/jpeg", new byte[] {});
     //Attachment attachment4 = new TextAttachment("text/html", "<html></html>");
     assertNull(attachment.getAttachmentId());
+    assertEquals(-1, attachment.getLength());
     final CountDownLatch uploadSignal = new CountDownLatch(1);
     attachment.upload(new Attachment.AttachmentTrasferLister() {
       @Override public void onStart(Attachment attachment) {
@@ -228,32 +229,34 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
     uploadSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     assertEquals(0, uploadSignal.getCount());
     assertNotNull(attachment.getAttachmentId());
+    assertTrue(attachment.getLength() > 0);
+    assertEquals(Attachment.Status.COMPLETE, attachment.getStatus());
 
-    final CountDownLatch downloadSignal = new CountDownLatch(1);
-    InputStreamAttachment downloadAttachment = new InputStreamAttachment(attachment.getAttachmentId());
-    assertNull(downloadAttachment.getAsBytes());
-    downloadAttachment.download(new Attachment.AttachmentTrasferLister() {
-      @Override public void onStart(Attachment attachment) {
-
-      }
-
-      @Override public void onProgress(Attachment attachment, long processedBytes) {
-
-      }
-
-      @Override public void onComplete(Attachment attachment) {
-        downloadSignal.countDown();
-      }
-
-      @Override public void onError(Attachment attachment, Throwable error) {
-        fail(error.getMessage());
-        downloadSignal.countDown();
-      }
-    });
-    downloadSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
-    assertEquals(0, downloadSignal.getCount());
-    assertNotNull(downloadAttachment.getAsBytes());
-    assertEquals(attachment.getLength(), downloadAttachment.getLength());
+    //final CountDownLatch downloadSignal = new CountDownLatch(1);
+    //InputStreamAttachment downloadAttachment = new InputStreamAttachment(attachment.getAttachmentId());
+    //assertNull(downloadAttachment.getAsBytes());
+    //downloadAttachment.download(new Attachment.AttachmentTrasferLister() {
+    //  @Override public void onStart(Attachment attachment) {
+    //
+    //  }
+    //
+    //  @Override public void onProgress(Attachment attachment, long processedBytes) {
+    //
+    //  }
+    //
+    //  @Override public void onComplete(Attachment attachment) {
+    //    downloadSignal.countDown();
+    //  }
+    //
+    //  @Override public void onError(Attachment attachment, Throwable error) {
+    //    fail(error.getMessage());
+    //    downloadSignal.countDown();
+    //  }
+    //});
+    //downloadSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
+    //assertEquals(0, downloadSignal.getCount());
+    //assertNotNull(downloadAttachment.getAsBytes());
+    //assertEquals(attachment.getLength(), downloadAttachment.getLength());
 
     final CountDownLatch logoutSignal = new CountDownLatch(1);
     User.logout(new ApiCallback<Boolean>() {
