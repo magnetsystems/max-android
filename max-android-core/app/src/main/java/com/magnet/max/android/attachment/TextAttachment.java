@@ -24,8 +24,8 @@ public class TextAttachment extends Attachment<String> {
     this(TEXT_PLAIN, content, null);
   }
 
-  public TextAttachment(String content, String charsetName) {
-    this(TEXT_PLAIN, content, charsetName);
+  public TextAttachment(String mimeType, String content) {
+    this(TEXT_PLAIN, content, null);
   }
 
   public TextAttachment(String mimeType, String content, String charsetName) {

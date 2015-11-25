@@ -33,10 +33,10 @@ public class InputStreamAttachment extends Attachment<InputStream> {
     super(mimeType, content, -1);
   }
 
-  public InputStreamAttachment(String id) {
-    super(null, null, -1);
-    this.attachmentId = id;
-  }
+  //public InputStreamAttachment(String id) {
+  //  super(null, null, -1);
+  //  this.attachmentId = id;
+  //}
 
   @Override protected byte[] convertToBytes() {
     try {

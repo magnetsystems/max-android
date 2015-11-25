@@ -99,6 +99,9 @@ public abstract class Attachment<T> {
   }
 
   public Status getStatus() {
+    if(null == status) {
+      status = Status.INIT;
+    }
     return status;
   }
 
@@ -178,6 +181,9 @@ public abstract class Attachment<T> {
         listener.onComplete(this);
       }
     } else if(status == Status.INIT) {
+      if (null != listener) {
+        listener.onStart(this);
+      }
       getAttachmentService().download(attachmentId, new Callback<byte[]>() {
         @Override public void onResponse(Response<byte[]> response) {
           if (response.isSuccess()) {
@@ -193,7 +199,7 @@ public abstract class Attachment<T> {
         }
 
         @Override public void onFailure(Throwable throwable) {
-
+          handleError(throwable);
         }
 
         private void handleError(Throwable throwable) {
