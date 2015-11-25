@@ -52,7 +52,7 @@ public class Attachment {
   public static final String TEXT_PLAIN = "text/plain";
   public static final String TEXT_HTML = "text/html";
 
-  public interface AttachmentTrasferLister {
+  public interface AttachmentTransferLister {
     void onStart(Attachment attachment);
     //void onProgress(Attachment attachment, long processedBytes);
     void onComplete(Attachment attachment);
@@ -179,7 +179,7 @@ public class Attachment {
         urlBuilder.append("/");
       }
       urlBuilder.append("com.magnet.server/file/download/").append(attachmentId)
-          .append("?t=").append(ModuleManager.getUserToken().getAccessToken());
+          .append("?access_token=").append(ModuleManager.getUserToken().getAccessToken());
 
       downloadUrl = urlBuilder.toString();
     }
@@ -214,7 +214,7 @@ public class Attachment {
     return length;
   }
 
-  public void upload(final AttachmentTrasferLister listener) {
+  public void upload(final AttachmentTransferLister listener) {
     if(StringUtil.isNotEmpty(attachmentId)) {
       // Already uploaded
       Log.d(TAG, "Aready uploaded");
@@ -228,38 +228,45 @@ public class Attachment {
       if(null != listener) {
         listener.onStart(this);
       }
-      getAttachmentService().upload(
-          RequestBody.create(MediaType.parse(getMimeType()), getAsBytes()),
-          new Callback<String>() {
-            @Override public void onResponse(Response<String> response) {
-              if (response.isSuccess()) {
-                String result = response.body();
-                if (StringUtil.isNotEmpty(result)) {
-                  attachmentId = result;
-                  status = Status.COMPLETE;
-                  if (null != listener) {
-                    listener.onComplete(Attachment.this);
-                  }
-                } else {
-                  handleError(new Exception("Can't attachmentId from response"));
-                }
-              } else {
-                handleError(new Exception(response.message()));
-              }
-            }
 
-            @Override public void onFailure(Throwable throwable) {
-              handleError(throwable);
-            }
-
-            private void handleError(Throwable throwable) {
-              Log.d(TAG,
-                  "Failed to upload attachment " + name, throwable);
+      Callback<String> uploadCallback = new Callback<String>() {
+        @Override public void onResponse(Response<String> response) {
+          if (response.isSuccess()) {
+            String result = response.body();
+            if (StringUtil.isNotEmpty(result)) {
+              attachmentId = result;
+              status = Status.COMPLETE;
               if (null != listener) {
-                listener.onError(Attachment.this, throwable);
+                listener.onComplete(Attachment.this);
               }
+            } else {
+              handleError(new Exception("Can't attachmentId from response"));
             }
-          }).executeInBackground();
+          } else {
+            handleError(new Exception(response.message()));
+          }
+        }
+
+        @Override public void onFailure(Throwable throwable) {
+          handleError(throwable);
+        }
+
+        private void handleError(Throwable throwable) {
+          Log.d(TAG,
+              "Failed to upload attachment " + name, throwable);
+          if (null != listener) {
+            listener.onError(Attachment.this, throwable);
+          }
+        }
+      };
+
+      if(sourceType == ContentSourceType.FILE) {
+        getAttachmentService().upload(RequestBody.create(MediaType.parse(getMimeType()), (File) content), uploadCallback)
+            .executeInBackground();
+      } else {
+        getAttachmentService().upload(RequestBody.create(MediaType.parse(getMimeType()), getAsBytes()), uploadCallback)
+            .executeInBackground();
+      }
 
       status = Status.TRANSFERING;
     } else if(status == Status.TRANSFERING) {
@@ -267,7 +274,7 @@ public class Attachment {
     }
   }
 
-  public void download(final AttachmentTrasferLister listener) {
+  public void download(final AttachmentTransferLister listener) {
     if(StringUtil.isEmpty(attachmentId)) {
       throw new IllegalStateException("AttachmentId is not available");
     }
