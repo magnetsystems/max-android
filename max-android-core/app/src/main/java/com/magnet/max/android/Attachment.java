@@ -35,7 +35,8 @@ public class Attachment {
     INIT,
     INLINE,
     TRANSFERING,
-    COMPLETE
+    COMPLETE,
+    ERROR
   }
 
   public enum ContentSourceType {
@@ -52,11 +53,24 @@ public class Attachment {
   public static final String TEXT_PLAIN = "text/plain";
   public static final String TEXT_HTML = "text/html";
 
-  public interface AttachmentTransferLister {
+  public interface UploadListener {
     void onStart(Attachment attachment);
     //void onProgress(Attachment attachment, long processedBytes);
     void onComplete(Attachment attachment);
     void onError(Attachment attachment, Throwable error);
+  }
+
+  public static abstract class AbstractDownloadListener<T> {
+    public void onStart() {
+
+    }
+    //void onProgress(Attachment attachment, long processedBytes);
+    public abstract void onComplete(T content);
+    public abstract void onError(Throwable error);
+  }
+
+  public static abstract class DownloadToBytesListener extends AbstractDownloadListener<byte[]> {
+
   }
 
   protected transient Status status = Status.INIT;
@@ -166,9 +180,8 @@ public class Attachment {
 
   public String getDownloadUrl() {
     if(null == downloadUrl) {
-      if(StringUtil.isEmpty(attachmentId)) {
-        throw new IllegalStateException("Attachment hasn't been uploaded yet");
-      }
+      checkIfContentAvailable();
+
       if(null == ModuleManager.getUserToken()) {
         throw new IllegalStateException("User hasn't login");
       }
@@ -178,7 +191,7 @@ public class Attachment {
       if(!baseUrl.endsWith("/")) {
         urlBuilder.append("/");
       }
-      urlBuilder.append("com.magnet.server/file/download/").append(attachmentId)
+      urlBuilder.append("com.magnet.server/file/downloadAsBytes/").append(attachmentId)
           .append("?access_token=").append(ModuleManager.getUserToken().getAccessToken());
 
       downloadUrl = urlBuilder.toString();
@@ -214,7 +227,7 @@ public class Attachment {
     return length;
   }
 
-  public void upload(final AttachmentTransferLister listener) {
+  public void upload(final UploadListener listener) {
     if(StringUtil.isNotEmpty(attachmentId)) {
       // Already uploaded
       Log.d(TAG, "Aready uploaded");
@@ -224,7 +237,7 @@ public class Attachment {
       return;
     }
 
-    if(status == Status.INIT) {
+    if(status == Status.INIT || status == Status.ERROR) {
       if(null != listener) {
         listener.onStart(this);
       }
@@ -252,6 +265,7 @@ public class Attachment {
         }
 
         private void handleError(Throwable throwable) {
+          status = Status.ERROR;
           Log.d(TAG,
               "Failed to upload attachment " + name, throwable);
           if (null != listener) {
@@ -274,11 +288,13 @@ public class Attachment {
     }
   }
 
-  public void download(final AttachmentTransferLister listener) {
-    if(StringUtil.isEmpty(attachmentId)) {
-      throw new IllegalStateException("AttachmentId is not available");
-    }
+  public void download(DownloadToBytesListener listener) {
+    checkIfContentAvailable();
 
+    download(listener, ContentSourceType.BYTE_ARRAY);
+  }
+
+  private void download(final AbstractDownloadListener listener, ContentSourceType contentType) {
     if(status == Status.COMPLETE || status == Status.INLINE) {
       // Already downloaded
       if (null != listener) {
@@ -286,34 +302,37 @@ public class Attachment {
       }
     } else if(status == Status.INIT) {
       if (null != listener) {
-        listener.onStart(this);
+        listener.onStart();
       }
-      getAttachmentService().download(attachmentId, new Callback<byte[]>() {
-        @Override public void onResponse(Response<byte[]> response) {
-          if (response.isSuccess()) {
-            data = response.body();
-            length = data.length;
-            status = Status.COMPLETE;
-            if (null != listener) {
-              listener.onComplete(Attachment.this);
+
+      if(contentType == ContentSourceType.BYTE_ARRAY) {
+        getAttachmentService().downloadAsBytes(attachmentId, new Callback<byte[]>() {
+          @Override public void onResponse(Response<byte[]> response) {
+            if (response.isSuccess()) {
+              data = response.body();
+              length = data.length;
+              status = Status.COMPLETE;
+              if (null != listener) {
+                listener.onComplete(data);
+              }
+            } else {
+              handleError(new Exception(response.message()));
             }
-          } else {
-            handleError(new Exception(response.message()));
           }
-        }
 
-        @Override public void onFailure(Throwable throwable) {
-          handleError(throwable);
-        }
-
-        private void handleError(Throwable throwable) {
-          Log.d(TAG,
-              "Failed to download attachment " + name, throwable);
-          if (null != listener) {
-            listener.onError(Attachment.this, throwable);
+          @Override public void onFailure(Throwable throwable) {
+            handleError(throwable);
           }
-        }
-      }).executeInBackground();
+
+          private void handleError(Throwable throwable) {
+            status = Status.ERROR;
+            Log.d(TAG, "Failed to download attachment " + name, throwable);
+            if (null != listener) {
+              listener.onError(throwable);
+            }
+          }
+        }).executeInBackground();
+      }
       status = Status.TRANSFERING;
     } else if(status == Status.TRANSFERING) {
       throw new IllegalStateException("Attachment is being downloading");
@@ -380,5 +399,11 @@ public class Attachment {
     }
 
     return null;
+  }
+
+  private void checkIfContentAvailable() {
+    if(StringUtil.isEmpty(attachmentId)) {
+      throw new IllegalStateException("AttachmentId is not available");
+    }
   }
 }

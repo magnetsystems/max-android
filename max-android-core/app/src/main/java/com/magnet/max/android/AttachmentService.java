@@ -16,7 +16,9 @@
  */
 package com.magnet.max.android;
 
+import com.squareup.okhttp.ResponseBody;
 import retrofit.MagnetCall;
+import retrofit.Response;
 import retrofit.http.GET;
 import retrofit.http.Multipart;
 import retrofit.http.POST;
@@ -48,6 +50,8 @@ public interface AttachmentService {
   //    retrofit.Callback<Map<String, String>> callback);
 
   @GET("/api/com.magnet.server/file/download/{fileId}")
-  @Streaming
-  MagnetCall<byte[]> download(@Path("fileId") String fileId, retrofit.Callback<byte[]> callback);
+  MagnetCall<byte[]> downloadAsBytes(@Path("fileId") String fileId, retrofit.Callback<byte[]> callback);
+
+  @GET("/api/com.magnet.server/file/download/{fileId}")
+  MagnetCall<ResponseBody> downloadAsStream(@Path("fileId") String fileId, retrofit.Callback<ResponseBody> callback);
 }

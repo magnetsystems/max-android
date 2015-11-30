@@ -203,7 +203,7 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
     assertNull(attachment.getAttachmentId());
     assertEquals(-1, attachment.getLength());
     final CountDownLatch uploadSignal = new CountDownLatch(1);
-    attachment.upload(new Attachment.AttachmentTransferLister() {
+    attachment.upload(new Attachment.UploadListener() {
       @Override public void onStart(Attachment attachment) {
 
       }
@@ -230,7 +230,7 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
     //final CountDownLatch downloadSignal = new CountDownLatch(1);
     //InputStreamAttachment downloadAttachment = new InputStreamAttachment(attachment.getAttachmentId());
     //assertNull(downloadAttachment.getAsBytes());
-    //downloadAttachment.download(new Attachment.AttachmentTrasferLister() {
+    //downloadAttachment.downloadAsBytes(new Attachment.AttachmentTrasferLister() {
     //  @Override public void onStart(Attachment attachment) {
     //
     //  }
