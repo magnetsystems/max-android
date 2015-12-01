@@ -16,6 +16,7 @@
  */
 package com.magnet.max.android;
 
+import android.content.Context;
 import android.util.Log;
 import com.magnet.max.android.util.StringUtil;
 import com.squareup.okhttp.MediaType;
@@ -30,6 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.UUID;
 import retrofit.Callback;
 import retrofit.Response;
 
@@ -71,20 +73,26 @@ public class Attachment {
   /**
    * Download the content of attachment as byte array
    */
-  public static abstract class DownloadToBytesListener extends AbstractDownloadListener<byte[]> {
+  public static abstract class DownloadAsBytesListener extends AbstractDownloadListener<byte[]> {
   }
 
   /**
    * Download the content of attachment to a file
    */
-  public static abstract class DownloadToFileListener extends AbstractDownloadListener<File> {
+  public static abstract class DownloadAsFileListener extends AbstractDownloadListener<File> {
   }
 
   /**
    * Download the content of attachment as {@link InputStream}
    * The stream should be read in a backgroud thread
    */
-  public static abstract class DownloadToStreamListener extends AbstractDownloadListener<InputStream> {
+  public static abstract class DownloadAsStreamListener extends AbstractDownloadListener<InputStream> {
+  }
+
+  /**
+   * Download the content of attachment as String
+   */
+  public static abstract class DownloadAsStringListener extends AbstractDownloadListener<String> {
   }
 
   private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
@@ -92,6 +100,8 @@ public class Attachment {
 
   public static final String TEXT_PLAIN = "text/plain";
   public static final String TEXT_HTML = "text/html";
+
+  private static File defaultDownloadDir;
 
   protected transient Status status = Status.INIT;
   protected ContentSourceType sourceType;
@@ -111,6 +121,11 @@ public class Attachment {
 
   protected transient AttachmentService attachmentService;
 
+  /**
+   * Create from a {@link File}
+   * @param content
+   * @param mimeType
+   */
   public Attachment(File content, String mimeType) {
     this(content, mimeType, null, null);
   }
@@ -154,16 +169,16 @@ public class Attachment {
   }
 
   public Attachment(String content, String mimeType) {
-    this(content, mimeType, null, null, null);
+    this(content, mimeType, null, null);
   }
 
-  public Attachment(String content, String mimeType, String charsetName, String name, String description) {
+  public Attachment(String content, String mimeType, /**String charsetName,**/ String name, String description) {
     if(StringUtil.isEmpty(content)) {
       throw new IllegalArgumentException("content shouldn't be empty");
     }
     this.length = content.length();
     sourceType = ContentSourceType.TEXT;
-    this.charsetName = charsetName;
+    //this.charsetName = charsetName;
     create(content, mimeType, name, description);
   }
 
@@ -198,6 +213,10 @@ public class Attachment {
     return attachmentId;
   }
 
+  /**
+   * The URL to download the content directly
+   * @return
+   */
   public String getDownloadUrl() {
     if(null == downloadUrl) {
       checkIfContentAvailable();
@@ -308,30 +327,57 @@ public class Attachment {
     }
   }
 
-  public void download(DownloadToBytesListener listener) {
+  /**
+   * Download the attachment as byte array
+   * @param listener
+   */
+  public void download(DownloadAsBytesListener listener) {
     checkIfContentAvailable();
 
     AbstractDownloader downloader = new BytesDownloader(listener);
     downloader.download();
   }
 
-  public void download(String destinationFilePath, DownloadToFileListener listener) {
+  /**
+   * Download the attachment to a specific file path
+   * @param destinationFilePath
+   * @param listener
+   */
+  public void download(String destinationFilePath, DownloadAsFileListener listener) {
     download(new File(destinationFilePath), listener);
   }
 
-  public void download(File destinationFile, DownloadToFileListener listener) {
+  /**
+   * Download the attachment to a specific file
+   * @param destinationFile
+   * @param listener
+   */
+  public void download(File destinationFile, DownloadAsFileListener listener) {
     checkIfContentAvailable();
 
     AbstractDownloader downloader = new FileDownloader(destinationFile, listener);
     downloader.download();
   }
 
-  //public void download(DownloadToFileListener listener) {
-  //
-  //  download(null, listener);
-  //}
+  /**
+   * Download the attachment to a temp file under messageAttachments in app data directory
+   * @param listener
+   */
+  public void download(DownloadAsFileListener listener) {
+    File dir = getDefaultDownloadDir();
+    if(null != dir) {
+      File destinationFile = new File(dir, UUID.randomUUID().toString());
+      download(destinationFile, listener);
+    } else {
+      throw new IllegalStateException("Can't get local dir to download attachment");
+    }
+  }
 
-  public void download(DownloadToStreamListener listener) {
+  /**
+   * Download the attachment as {@link InputStream}
+   * @param listener
+   */
+  public void download(DownloadAsStreamListener listener) {
     checkIfContentAvailable();
 
     AbstractDownloader downloader = new StreamDownloader(listener);
@@ -404,6 +450,20 @@ public class Attachment {
     if(StringUtil.isEmpty(attachmentId)) {
       throw new IllegalStateException("AttachmentId is not available");
     }
+  }
+
+  private static File getDefaultDownloadDir() {
+    if(null == defaultDownloadDir) {
+      Context theContext = MaxCore.getApplicationContext();
+      if(null != theContext) {
+        defaultDownloadDir = new File(theContext.getFilesDir() + "/messageAttachments/");
+        if (!defaultDownloadDir.exists()) {
+          defaultDownloadDir.mkdirs();
+        }
+      }
+    }
+
+    return defaultDownloadDir;
   }
 
   private abstract class AbstractDownloader {
