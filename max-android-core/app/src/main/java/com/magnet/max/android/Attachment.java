@@ -211,7 +211,7 @@ public class Attachment {
       if(!baseUrl.endsWith("/")) {
         urlBuilder.append("/");
       }
-      urlBuilder.append("com.magnet.server/file/downloadAsBytes/").append(attachmentId)
+      urlBuilder.append("com.magnet.server/file/download/").append(attachmentId)
           .append("?access_token=").append(ModuleManager.getUserToken().getAccessToken());
 
       downloadUrl = urlBuilder.toString();
@@ -325,6 +325,11 @@ public class Attachment {
     AbstractDownloader downloader = new FileDownloader(destinationFile, listener);
     downloader.download();
   }
+
+  //public void download(DownloadToFileListener listener) {
+  //
+  //  download(null, listener);
+  //}
 
   public void download(DownloadToStreamListener listener) {
     checkIfContentAvailable();
