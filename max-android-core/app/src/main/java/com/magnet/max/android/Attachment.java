@@ -20,12 +20,15 @@ import android.util.Log;
 import com.magnet.max.android.util.StringUtil;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.ResponseBody;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import retrofit.Callback;
 import retrofit.Response;
@@ -46,13 +49,9 @@ public class Attachment {
     BYTE_ARRAY
   }
 
-  private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
-
-  private static final String TAG = Attachment.class.getSimpleName();
-
-  public static final String TEXT_PLAIN = "text/plain";
-  public static final String TEXT_HTML = "text/html";
-
+  /**
+   * Listener for events uploading a attachment
+   */
   public interface UploadListener {
     void onStart(Attachment attachment);
     //void onProgress(Attachment attachment, long processedBytes);
@@ -69,9 +68,30 @@ public class Attachment {
     public abstract void onError(Throwable error);
   }
 
+  /**
+   * Download the content of attachment as byte array
+   */
   public static abstract class DownloadToBytesListener extends AbstractDownloadListener<byte[]> {
-
   }
+
+  /**
+   * Download the content of attachment to a file
+   */
+  public static abstract class DownloadToFileListener extends AbstractDownloadListener<File> {
+  }
+
+  /**
+   * Download the content of attachment as {@link InputStream}
+   * The stream should be read in a backgroud thread
+   */
+  public static abstract class DownloadToStreamListener extends AbstractDownloadListener<InputStream> {
+  }
+
+  private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
+  private static final String TAG = Attachment.class.getSimpleName();
+
+  public static final String TEXT_PLAIN = "text/plain";
+  public static final String TEXT_HTML = "text/html";
 
   protected transient Status status = Status.INIT;
   protected ContentSourceType sourceType;
@@ -291,52 +311,26 @@ public class Attachment {
   public void download(DownloadToBytesListener listener) {
     checkIfContentAvailable();
 
-    download(listener, ContentSourceType.BYTE_ARRAY);
+    AbstractDownloader downloader = new BytesDownloader(listener);
+    downloader.download();
   }
 
-  private void download(final AbstractDownloadListener listener, ContentSourceType contentType) {
-    if(status == Status.COMPLETE || status == Status.INLINE) {
-      // Already downloaded
-      if (null != listener) {
-        listener.onComplete(this);
-      }
-    } else if(status == Status.INIT) {
-      if (null != listener) {
-        listener.onStart();
-      }
+  public void download(String destinationFilePath, DownloadToFileListener listener) {
+    download(new File(destinationFilePath), listener);
+  }
 
-      if(contentType == ContentSourceType.BYTE_ARRAY) {
-        getAttachmentService().downloadAsBytes(attachmentId, new Callback<byte[]>() {
-          @Override public void onResponse(Response<byte[]> response) {
-            if (response.isSuccess()) {
-              data = response.body();
-              length = data.length;
-              status = Status.COMPLETE;
-              if (null != listener) {
-                listener.onComplete(data);
-              }
-            } else {
-              handleError(new Exception(response.message()));
-            }
-          }
+  public void download(File destinationFile, DownloadToFileListener listener) {
+    checkIfContentAvailable();
 
-          @Override public void onFailure(Throwable throwable) {
-            handleError(throwable);
-          }
+    AbstractDownloader downloader = new FileDownloader(destinationFile, listener);
+    downloader.download();
+  }
 
-          private void handleError(Throwable throwable) {
-            status = Status.ERROR;
-            Log.d(TAG, "Failed to download attachment " + name, throwable);
-            if (null != listener) {
-              listener.onError(throwable);
-            }
-          }
-        }).executeInBackground();
-      }
-      status = Status.TRANSFERING;
-    } else if(status == Status.TRANSFERING) {
-      throw new IllegalStateException("Attachment is being downloading");
-    }
+  public void download(DownloadToStreamListener listener) {
+    checkIfContentAvailable();
+
+    AbstractDownloader downloader = new StreamDownloader(listener);
+    downloader.download();
   }
 
   protected AttachmentService getAttachmentService() {
@@ -404,6 +398,200 @@ public class Attachment {
   private void checkIfContentAvailable() {
     if(StringUtil.isEmpty(attachmentId)) {
       throw new IllegalStateException("AttachmentId is not available");
+    }
+  }
+
+  private abstract class AbstractDownloader {
+
+    protected final AbstractDownloadListener listener;
+    protected final ContentSourceType sourceType;
+
+    abstract protected void doDownload();
+
+    public AbstractDownloader(AbstractDownloadListener listener, ContentSourceType sourceType) {
+      this.listener = listener;
+      this.sourceType = sourceType;
+    }
+
+    public void download() {
+      Status currentStatus = getStatus();
+      if (currentStatus == Status.COMPLETE) {
+        //TODO : content is not cached right now, alway re-download
+        //// Already downloaded
+        //if (null != listener) {
+        //  listener.onComplete(this);
+        //}
+        status = Status.INIT;
+        if (null != listener) {
+          listener.onStart();
+        }
+
+        doDownload();
+
+        status = Status.TRANSFERING;
+      } else if (currentStatus == Status.INIT) {
+        if (null != listener) {
+          listener.onStart();
+        }
+
+        doDownload();
+
+        status = Status.TRANSFERING;
+      } else if(currentStatus == Status.INLINE) {
+
+      } else if (currentStatus == Status.TRANSFERING) {
+        throw new IllegalStateException("Attachment is being downloading");
+      }
+    }
+  }
+
+  private class BytesDownloader extends AbstractDownloader {
+
+    public BytesDownloader(AbstractDownloadListener listener) {
+      super(listener, ContentSourceType.BYTE_ARRAY);
+    }
+
+    @Override protected void doDownload() {
+      getAttachmentService().downloadAsBytes(attachmentId, new Callback<byte[]>() {
+        @Override public void onResponse(Response<byte[]> response) {
+          if (response.isSuccess()) {
+            data = response.body();
+            length = data.length;
+            status = Status.COMPLETE;
+            if (null != listener) {
+              listener.onComplete(data);
+            }
+          } else {
+            handleError(new Exception(response.message()));
+          }
+        }
+
+        @Override public void onFailure(Throwable throwable) {
+          handleError(throwable);
+        }
+
+        private void handleError(Throwable throwable) {
+          status = Status.ERROR;
+          Log.d(TAG, "Failed to download attachment " + name, throwable);
+          if (null != listener) {
+            listener.onError(throwable);
+          }
+        }
+      }).executeInBackground();
+    }
+  }
+
+  private class FileDownloader extends AbstractDownloader {
+
+    private final File destinationFile;
+
+    public FileDownloader(File destinationFile, AbstractDownloadListener listener) {
+      super(listener, ContentSourceType.FILE);
+      this.destinationFile = destinationFile;
+    }
+
+    @Override protected void doDownload() {
+      getAttachmentService().downloadAsStream(attachmentId, new Callback<ResponseBody>() {
+        @Override public void onResponse(Response<ResponseBody> response) {
+          if (response.isSuccess()) {
+            try {
+              writeToFile(response.body().byteStream(), destinationFile);
+              status = Status.COMPLETE;
+              length = destinationFile.length();
+              if (null != listener) {
+                listener.onComplete(destinationFile);
+              }
+            } catch (IOException e) {
+              handleError(e);
+            }
+          } else {
+            handleError(new Exception(response.message()));
+          }
+        }
+
+        @Override public void onFailure(Throwable throwable) {
+          handleError(throwable);
+        }
+
+        private void writeToFile(InputStream is, File destinationFile) {
+          OutputStream outputStream = null;
+          try {
+            outputStream = new FileOutputStream(destinationFile);
+
+            int read = 0;
+            byte[] bytes = new byte[DEFAULT_BUFFER_SIZE];
+
+            while ((read = is.read(bytes)) != -1) {
+              outputStream.write(bytes, 0, read);
+            }
+          } catch (IOException e) {
+            e.printStackTrace();
+          } finally {
+            if (is != null) {
+              try {
+                is.close();
+              } catch (IOException e) {
+                e.printStackTrace();
+              }
+            }
+            if (outputStream != null) {
+              try {
+                outputStream.close();
+              } catch (IOException e) {
+                e.printStackTrace();
+              }
+            }
+          }
+        }
+
+        private void handleError(Throwable throwable) {
+          status = Status.ERROR;
+          Log.d(TAG, "Failed to download attachment " + name + " to file " + destinationFile.getAbsolutePath(), throwable);
+          if (null != listener) {
+            listener.onError(throwable);
+          }
+        }
+      }).executeInBackground();
+    }
+  }
+
+  private class StreamDownloader extends AbstractDownloader {
+
+    public StreamDownloader(AbstractDownloadListener listener) {
+      super(listener, ContentSourceType.INPUT_STREAM);
+    }
+
+    @Override protected void doDownload() {
+      getAttachmentService().downloadAsStream(attachmentId, new Callback<ResponseBody>() {
+        @Override public void onResponse(Response<ResponseBody> response) {
+          if (response.isSuccess()) {
+            status = Status.COMPLETE;
+            try {
+              length = response.body().contentLength();
+              if (null != listener) {
+                listener.onComplete(response.body().byteStream());
+              }
+            } catch (IOException e) {
+              handleError(e);
+            }
+          } else {
+            handleError(new Exception(response.message()));
+          }
+        }
+
+
+        @Override public void onFailure(Throwable throwable) {
+          handleError(throwable);
+        }
+
+        private void handleError(Throwable throwable) {
+          status = Status.ERROR;
+          Log.d(TAG, "Failed to download attachment " + name + " to stream ", throwable);
+          if (null != listener) {
+            listener.onError(throwable);
+          }
+        }
+      }).executeInBackground();
     }
   }
 }
