@@ -495,7 +495,7 @@ public class Attachment {
         @Override public void onResponse(Response<ResponseBody> response) {
           if (response.isSuccess()) {
             try {
-              writeToFile(response.body().byteStream(), destinationFile);
+              writeInputStreamToFile(response.body().byteStream(), destinationFile);
               status = Status.COMPLETE;
               length = destinationFile.length();
               if (null != listener) {
@@ -513,7 +513,7 @@ public class Attachment {
           handleError(throwable);
         }
 
-        private void writeToFile(InputStream is, File destinationFile) {
+        private void writeInputStreamToFile(InputStream is, File destinationFile) {
           OutputStream outputStream = null;
           try {
             outputStream = new FileOutputStream(destinationFile);
