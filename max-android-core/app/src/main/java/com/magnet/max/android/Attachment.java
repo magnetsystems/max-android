@@ -613,14 +613,12 @@ public class Attachment {
               try {
                 is.close();
               } catch (IOException e) {
-                e.printStackTrace();
               }
             }
             if (outputStream != null) {
               try {
                 outputStream.close();
               } catch (IOException e) {
-                e.printStackTrace();
               }
             }
           }
