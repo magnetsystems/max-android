@@ -33,7 +33,8 @@ public interface LogEventsCollectionService {
    * @param callback asynchronous callback
    */
   @Multipart
-  @POST("/api/com.magnet.server/collections/events/batch") MagnetCall<Void> addEventsFromFile(@Part("file") com.squareup.okhttp.RequestBody file, retrofit.Callback<Void> callback);
+  @POST("/api/com.magnet.server/collections/events/batch")
+  MagnetCall<Void> addEventsFromFile(@Part("file") com.squareup.okhttp.RequestBody file, retrofit.Callback<Void> callback);
 
   /**
    * 

@@ -22,6 +22,7 @@ import com.magnet.max.android.util.MagnetUtils;
 import com.magnet.max.android.util.TypeUtil;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.Response;
 import com.squareup.okhttp.ResponseBody;
 import java.io.IOException;
 import java.io.Reader;
@@ -40,6 +41,8 @@ public class MagnetGsonConverter<T> implements Converter<T> {
   private final MediaType MEDIA_TYPE_TEXT = MediaType.parse("text/plain; charset=UTF-8");
   private static final Charset UTF_8 = Charset.forName("UTF-8");
 
+  private static final TypeToken BYTE_ARRAY_TYPE_TOKEN = new TypeToken<byte[]>() {};
+
   private final TypeToken<T> typeToken;
 
   private final Gson gson;
@@ -53,6 +56,14 @@ public class MagnetGsonConverter<T> implements Converter<T> {
   @Override public T fromBody(ResponseBody responseBody) throws IOException {
     if(isVoidType(typeToken.getType())) {
       return null;
+    }
+
+    if(typeToken.getRawType().equals(ResponseBody.class)) {
+      return (T) responseBody;
+    }
+
+    if(isByteArray()) {
+      return (T) responseBody.bytes();
     }
 
     //Charset charset = UTF_8;
@@ -151,6 +162,17 @@ public class MagnetGsonConverter<T> implements Converter<T> {
     }
 
     return false;
+  }
+
+  private boolean isByteArray() {
+    //if(typeToken.getRawType().isArray()) {
+    //  //typeToken.getRawType().
+    //  TypeToken tt = new TypeToken<byte[]>() {};
+    //}
+    //
+    //return false;
+
+    return BYTE_ARRAY_TYPE_TOKEN.equals(typeToken);
   }
 
   private T unmarshalBasicType(ResponseBody responseBody, Type type) {

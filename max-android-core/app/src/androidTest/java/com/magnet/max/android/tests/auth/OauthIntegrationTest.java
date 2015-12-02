@@ -29,6 +29,7 @@ import com.magnet.max.android.Constants;
 import com.magnet.max.android.MaxCore;
 import com.magnet.max.android.MaxModule;
 import com.magnet.max.android.User;
+import com.magnet.max.android.Attachment;
 import com.magnet.max.android.auth.model.UpdateProfileRequest;
 import com.magnet.max.android.auth.model.UserRealm;
 import com.magnet.max.android.auth.model.UserRegistrationInfo;
@@ -135,7 +136,7 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
 
     final CountDownLatch loginSignal = new CountDownLatch(1);
     assertNull(User.getCurrentUser());
-    User.login(userName, "password", true, new ApiCallback<Boolean>() {
+    User.login(userName, "password", false, new ApiCallback<Boolean>() {
       @Override public void success(Boolean aBoolean) {
         assertTrue(aBoolean);
         assertNotNull(User.getCurrentUser());
@@ -192,6 +193,65 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
     //});
     //userSearchSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     //assertEquals(0, userRegSignal.getCount());
+
+    //AttachmentService attachmentService = MaxCore.create(AttachmentService.class);
+    Attachment attachment = new Attachment(getContext().getResources().openRawResource(
+        R.raw.test_image), "image/jpeg");
+    //Attachment attachment2 = new FileAttachment("image/jpeg", new File("path"));
+    //Attachment attachment3 = new BytesAttachment("image/jpeg", new byte[] {});
+    //Attachment attachment4 = new TextAttachment("text/html", "<html></html>");
+    assertNull(attachment.getAttachmentId());
+    assertEquals(-1, attachment.getLength());
+    final CountDownLatch uploadSignal = new CountDownLatch(1);
+    attachment.upload(new Attachment.UploadListener() {
+      @Override public void onStart(Attachment attachment) {
+
+      }
+
+      //@Override public void onProgress(Attachment attachment, long processedBytes) {
+      //
+      //}
+
+      @Override public void onComplete(Attachment attachment) {
+        uploadSignal.countDown();
+      }
+
+      @Override public void onError(Attachment attachment, Throwable error) {
+        fail(error.getMessage());
+        uploadSignal.countDown();
+      }
+    });
+    uploadSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
+    assertEquals(0, uploadSignal.getCount());
+    assertNotNull(attachment.getAttachmentId());
+    assertTrue(attachment.getLength() > 0);
+    assertEquals(Attachment.Status.COMPLETE, attachment.getStatus());
+
+    //final CountDownLatch downloadSignal = new CountDownLatch(1);
+    //InputStreamAttachment downloadAttachment = new InputStreamAttachment(attachment.getAttachmentId());
+    //assertNull(downloadAttachment.getAsBytes());
+    //downloadAttachment.downloadAsBytes(new Attachment.AttachmentTrasferLister() {
+    //  @Override public void onStart(Attachment attachment) {
+    //
+    //  }
+    //
+    //  @Override public void onProgress(Attachment attachment, long processedBytes) {
+    //
+    //  }
+    //
+    //  @Override public void onComplete(Attachment attachment) {
+    //    downloadSignal.countDown();
+    //  }
+    //
+    //  @Override public void onError(Attachment attachment, Throwable error) {
+    //    fail(error.getMessage());
+    //    downloadSignal.countDown();
+    //  }
+    //});
+    //downloadSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
+    //assertEquals(0, downloadSignal.getCount());
+    //assertNotNull(downloadAttachment.getAsBytes());
+    //assertEquals(attachment.getLength(), downloadAttachment.getLength());
 
     final CountDownLatch logoutSignal = new CountDownLatch(1);
     User.logout(new ApiCallback<Boolean>() {
