@@ -17,6 +17,7 @@
 package com.magnet.max.android;
 
 import android.content.Context;
+import android.os.AsyncTask;
 import android.util.Log;
 import com.magnet.max.android.util.StringUtil;
 import com.squareup.okhttp.MediaType;
@@ -557,18 +558,34 @@ public class Attachment {
 
     @Override protected void doDownload() {
       getAttachmentService().downloadAsStream(attachmentId, new Callback<ResponseBody>() {
-        @Override public void onResponse(Response<ResponseBody> response) {
+        @Override public void onResponse(final Response<ResponseBody> response) {
           if (response.isSuccess()) {
-            try {
-              writeInputStreamToFile(response.body().byteStream(), destinationFile);
-              status = Status.COMPLETE;
-              length = destinationFile.length();
-              if (null != listener) {
-                listener.onComplete(destinationFile);
+            // Read the InputStream in AsyncTask
+            new AsyncTask<Void, Void, Exception>() {
+
+              @Override protected Exception doInBackground(Void... params) {
+                try {
+                  writeInputStreamToFile(response.body().byteStream(), destinationFile);
+                  status = Attachment.Status.COMPLETE;
+                  length = destinationFile.length();
+                } catch (IOException e) {
+                  return e;
+                }
+
+                return null;
               }
-            } catch (IOException e) {
-              handleError(e);
-            }
+
+              @Override protected void onPostExecute(Exception exception) {
+                if(null == exception) {
+                  if (null != listener) {
+                    listener.onComplete(destinationFile);
+                  }
+                } else {
+                  handleError(exception);
+                }
+              }
+
+            }.execute();
           } else {
             handleError(new Exception(response.message()));
           }

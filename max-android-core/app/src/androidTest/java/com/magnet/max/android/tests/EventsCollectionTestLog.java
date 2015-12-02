@@ -107,10 +107,10 @@ public class EventsCollectionTestLog extends AndroidTestCase {
   @MediumTest
   //@Suppress
   public void testUploadLogFileControllerHttp() {
-    testSayHello(MaxCore.create(LogEventsCollectionService.class));
+    testUploadLogFile(MaxCore.create(LogEventsCollectionService.class));
   }
 
-  private void testSayHello(LogEventsCollectionService myService) {
+  private void testUploadLogFile(LogEventsCollectionService myService) {
     EventLog log = new EventLog.LogBuilder().name("logtest").category("test").message("test").build();
     Gson gson = new Gson();
     final RequestBody fileBody = RequestBody.create(MediaType.parse("text/plain"), gson.toJson(log));

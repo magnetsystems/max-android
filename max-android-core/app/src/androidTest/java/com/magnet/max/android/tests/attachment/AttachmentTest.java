@@ -32,7 +32,7 @@ public class AttachmentTest extends AndroidTestCase {
         R.raw.test_image), "image/jpeg", null, null);
     //Attachment attachment2 = new Attachment(new File("path"), "image/jpeg", null, null);
     Attachment attachment3 = new Attachment(new byte[] {0,1,2}, "image/jpeg", null, null);
-    Attachment attachment4 = new Attachment("<html></html>", "text/html", null, null, null);
+    Attachment attachment4 = new Attachment("<html></html>", "text/html", null, null);
 
     List<Attachment> attachments = Arrays.asList(attachment1, attachment3, attachment4);
 
