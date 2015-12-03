@@ -221,7 +221,7 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
         uploadSignal.countDown();
       }
     });
-    uploadSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
+    uploadSignal.await(60, TimeUnit.SECONDS);
     assertEquals(0, uploadSignal.getCount());
     assertNotNull(attachment.getAttachmentId());
     assertTrue(attachment.getLength() > 0);

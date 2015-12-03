@@ -135,10 +135,10 @@ public class RequestInterceptor implements Interceptor {
     String authToken = null;
     if(null != authTokenProvider.getUserToken()) {
       authToken = authTokenProvider.getUserToken();
-      Log.i(TAG, "--------using user token : " + authToken);
+      Log.d(TAG, "--------using user token : " + authToken);
     } else if(null != authTokenProvider.getAppToken()){
       authToken = authTokenProvider.getAppToken();
-      Log.i(TAG, "--------using app token : " + authToken);
+      Log.d(TAG, "--------using app token : " + authToken);
     } else {
       Log.i(TAG, "--------no token ready yet");
     }
