@@ -36,7 +36,14 @@ import java.util.UUID;
 import retrofit.Callback;
 import retrofit.Response;
 
-public class Attachment {
+/**
+ * Attachment is used to save/download large content (such as file) to/from Max server.
+ */
+final public class Attachment {
+
+  /**
+   * Status of the attachment
+   */
   public enum Status {
     INIT,
     INLINE,
@@ -45,6 +52,9 @@ public class Attachment {
     ERROR
   }
 
+  /**
+   * Type of the source content
+   */
   public enum ContentSourceType {
     TEXT,
     FILE,
@@ -56,18 +66,46 @@ public class Attachment {
    * Listener for events uploading a attachment
    */
   public interface UploadListener {
+    /**
+     * Start to upload the attachment
+     * @param attachment
+     */
     void onStart(Attachment attachment);
     //void onProgress(Attachment attachment, long processedBytes);
+
+    /**
+     * The uploading is completed successfully
+     * @param attachment
+     */
     void onComplete(Attachment attachment);
+
+    /**
+     * The uploading fails
+     * @param attachment
+     * @param error
+     */
     void onError(Attachment attachment, Throwable error);
   }
 
-  public static abstract class AbstractDownloadListener<T> {
+  protected static abstract class AbstractDownloadListener<T> {
+    /**
+     * Downloading starts
+     */
     public void onStart() {
 
     }
     //void onProgress(Attachment attachment, long processedBytes);
+
+    /**
+     * Downloading finished and return the content
+     * @param content
+     */
     public abstract void onComplete(T content);
+
+    /**
+     * Downloading fails
+     * @param error
+     */
     public abstract void onError(Throwable error);
   }
 
@@ -131,7 +169,14 @@ public class Attachment {
     this(content, mimeType, null, null);
   }
 
-  public Attachment(File content, String mimeType, String name, String description) {
+  /**
+   * Create from a file with name and summary
+   * @param content
+   * @param mimeType
+   * @param name
+   * @param summary
+   */
+  public Attachment(File content, String mimeType, String name, String summary) {
     if(null == content) {
       throw new IllegalArgumentException("content shouldn't be null");
     }
@@ -140,39 +185,75 @@ public class Attachment {
     }
     this.length = content.length();
     sourceType = ContentSourceType.FILE;
-    create(content, mimeType, name, description);
+    create(content, mimeType, name, summary);
   }
 
+  /**
+   * Create from a byte array
+   * @param content
+   * @param mimeType
+   */
   public Attachment(byte[] content, String mimeType) {
     this(content, mimeType, null, null);
   }
 
-  public Attachment(byte[] content, String mimeType, String name, String description) {
+  /**
+   * Create from a byte array with name and summary
+   * @param content
+   * @param mimeType
+   * @param name
+   * @param summary
+   */
+  public Attachment(byte[] content, String mimeType, String name, String summary) {
     if(null == content || content.length == 0) {
       throw new IllegalArgumentException("content shouldn't be empty");
     }
     this.length = content.length;
     sourceType = ContentSourceType.BYTE_ARRAY;
     data = content;
-    create(content, mimeType, name, description);
+    create(content, mimeType, name, summary);
   }
 
+  /**
+   * Create from a {@link InputStream}
+   * @param content
+   * @param mimeType
+   */
   public Attachment(InputStream content, String mimeType) {
     this(content, mimeType, null, null);
   }
 
-  public Attachment(InputStream content, String mimeType, String name, String description) {
+  /**
+   * Create from a {@link InputStream} with name and summary
+   * @param content
+   * @param mimeType
+   * @param name
+   * @param summary
+   */
+  public Attachment(InputStream content, String mimeType, String name, String summary) {
     if(null == content) {
       throw new IllegalArgumentException("content shouldn't be null");
     }
     sourceType = ContentSourceType.INPUT_STREAM;
-    create(content, mimeType, name, description);
+    create(content, mimeType, name, summary);
   }
 
+  /**
+   * Create from a String
+   * @param content
+   * @param mimeType
+   */
   public Attachment(String content, String mimeType) {
     this(content, mimeType, null, null);
   }
 
+  /**
+   * Create from a String with name and summary
+   * @param content
+   * @param mimeType
+   * @param name
+   * @param description
+   */
   public Attachment(String content, String mimeType, /**String charsetName,**/ String name, String description) {
     if(StringUtil.isEmpty(content)) {
       throw new IllegalArgumentException("content shouldn't be empty");
@@ -191,7 +272,7 @@ public class Attachment {
     this.status = Status.INIT;
   }
 
-  public byte[] getAsBytes() {
+  private byte[] getAsBytes() {
     if(null == data && null != content) {
       data = convertToBytes();
       if(null != data) {
@@ -202,14 +283,22 @@ public class Attachment {
     return data;
   }
 
+  /**
+   * The MimeType of the attachment
+   * @return
+   */
   public String getMimeType() {
     return mimeType;
   }
 
-  public Object getContent() {
+  private Object getContent() {
     return content;
   }
 
+  /**
+   * The the id (returned from Max Server) of the attachment
+   * @return
+   */
   public String getAttachmentId() {
     return attachmentId;
   }
@@ -240,6 +329,10 @@ public class Attachment {
     return downloadUrl;
   }
 
+  /**
+   * Get the status of the attachment
+   * @return
+   */
   public Status getStatus() {
     if(null == status) {
       status = Status.INIT;
@@ -247,26 +340,42 @@ public class Attachment {
     return status;
   }
 
+  /**
+   * Get the name of the attachment
+   * @return
+   */
   public String getName() {
     return name;
   }
 
+  /**
+   * Get the summary fo the attachment
+   * @return
+   */
   public String getSummary() {
     return summary;
   }
 
-  public ContentSourceType getSourceType() {
+  private ContentSourceType getSourceType() {
     return sourceType;
   }
 
-  public String getCharsetName() {
+  private String getCharsetName() {
     return charsetName;
   }
 
+  /**
+   * Get the length of the content. Return -1 if the length it's not available
+   * @return
+   */
   public long getLength() {
     return length;
   }
 
+  /**
+   * Upload the attachment to Max Server
+   * @param listener
+   */
   public void upload(final UploadListener listener) {
     if(StringUtil.isNotEmpty(attachmentId)) {
       // Already uploaded
