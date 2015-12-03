@@ -27,6 +27,7 @@ import com.magnet.max.android.rest.MagnetCallAdapter;
 import com.magnet.max.android.rest.RequestInterceptor;
 import com.magnet.max.android.rest.RequestManager;
 import com.magnet.max.android.rest.RestConstants;
+import com.magnet.max.android.rest.annotation.Timeout;
 import com.magnet.max.android.rest.marshalling.MagnetGsonConverterFactory;
 import com.magnet.max.android.util.StringUtil;
 import com.squareup.okhttp.HttpUrl;
@@ -43,6 +44,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import retrofit.http.HTTP;
 import retrofit.http.Header;
@@ -108,6 +110,7 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
 
   private static final String TAG = MagnetRestAdapter.class.getSimpleName();
   private static final int DEFAULT_CACHE_SIZE = 100 * 1024 *1024; // 100M
+  private static final int DEFAULT_LONG_TIMEOUT = 5; // 5 Minutes
 
   private final Map<Method, MethodHandler<?>> methodHandlerCache = new LinkedHashMap<>();
 
@@ -119,6 +122,14 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
 
   private final RequestManager requestManager;
   private final RequestInterceptor requestInterceptor;
+
+  private AtomicReference<String> appTokenRef = new AtomicReference<String>(null);
+  private AtomicReference<String> userTokenRef = new AtomicReference<String>(null);
+  private AtomicReference<String> userNameRef = new AtomicReference<String>(null);
+  private AtomicReference<String> deviceIdRef = new AtomicReference<String>(null);
+
+  private Context applicationContext;
+  private boolean isAuthRequired = false;
 
   private MagnetRestAdapter(OkHttpClient client, BaseUrl baseUrl, List<Converter.Factory> converterFactories,
       /*List<CallAdapter.Factory> adapterFactories,*/ Executor callbackExecutor) {
@@ -136,14 +147,6 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
 
     client.setAuthenticator(new MaxRestAuthenticator());
   }
-
-  private AtomicReference<String> appTokenRef = new AtomicReference<String>(null);
-  private AtomicReference<String> userTokenRef = new AtomicReference<String>(null);
-  private AtomicReference<String> userNameRef = new AtomicReference<String>(null);
-  private AtomicReference<String> deviceIdRef = new AtomicReference<String>(null);
-
-  private Context applicationContext;
-  private boolean isAuthRequired = false;
 
   @Override public String getName() {
     return getClass().getSimpleName();
@@ -237,7 +240,9 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
     synchronized (methodHandlerCache) {
       handler = methodHandlerCache.get(method);
       if (handler == null) {
-        handler = MethodHandler.create(method, client, baseUrl, adapterFactories, converterFactories);
+        handler = MethodHandler.create(method,
+            getClient(method),
+            baseUrl, adapterFactories, converterFactories);
         methodHandlerCache.put(method, handler);
       }
     }
@@ -287,6 +292,44 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
 
   @Override public String getUserToken() {
     return userTokenRef.get();
+  }
+
+  /**
+   * Get the OkHttpClient with proper timeout settings
+   * @param method
+   * @return
+   */
+  private OkHttpClient getClient(Method method) {
+    Timeout timeoutAnnotation = method.getAnnotation(Timeout.class);
+    if(null != timeoutAnnotation) {
+      if(0 != timeoutAnnotation.read() || 0 != timeoutAnnotation.write()) {
+        OkHttpClient newClient = client.clone();
+        if(isTimeoutValid(timeoutAnnotation.read(), method, timeoutAnnotation)) {
+          newClient.setReadTimeout(timeoutAnnotation.read(), TimeUnit.SECONDS);
+        }
+        if(isTimeoutValid(timeoutAnnotation.write(), method, timeoutAnnotation)) {
+          newClient.setWriteTimeout(timeoutAnnotation.write(), TimeUnit.SECONDS);
+        }
+
+        Log.d(TAG, "Using new OkHttpClient with new timeout " + timeoutAnnotation + " for method " + method);
+
+        return newClient;
+      }
+    }
+
+    return client;
+  }
+
+  private boolean isTimeoutValid(int value, Method method, Timeout timeout) {
+    if (value > Integer.MAX_VALUE) {
+      Log.e(TAG, "Timeout " + timeout + " for method " + method + " is too big");
+      return false;
+    } else if (value < 0) {
+      Log.e(TAG, "Timeout " + timeout + " for method " + method + " should not be less than 0");
+      return false;
+    }
+
+    return true;
   }
 
   /**

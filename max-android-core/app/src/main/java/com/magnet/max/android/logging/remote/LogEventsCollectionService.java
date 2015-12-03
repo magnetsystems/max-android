@@ -21,6 +21,7 @@
 package com.magnet.max.android.logging.remote;
 
 import com.magnet.max.android.logging.EventLog;
+import com.magnet.max.android.rest.annotation.Timeout;
 import retrofit.MagnetCall;
 import retrofit.http.*;
 
@@ -32,6 +33,7 @@ public interface LogEventsCollectionService {
    * @param file style:Query optional:false
    * @param callback asynchronous callback
    */
+  @Timeout(write = 5 * 60)
   @Multipart
   @POST("/api/com.magnet.server/collections/events/batch")
   MagnetCall<Void> addEventsFromFile(@Part("file") com.squareup.okhttp.RequestBody file, retrofit.Callback<Void> callback);

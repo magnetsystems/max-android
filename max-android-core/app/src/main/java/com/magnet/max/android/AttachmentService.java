@@ -16,9 +16,9 @@
  */
 package com.magnet.max.android;
 
+import com.magnet.max.android.rest.annotation.Timeout;
 import com.squareup.okhttp.ResponseBody;
 import retrofit.MagnetCall;
-import retrofit.Response;
 import retrofit.http.GET;
 import retrofit.http.Multipart;
 import retrofit.http.POST;
@@ -33,6 +33,7 @@ public interface AttachmentService {
    * @param file style:Query optional:false
    * @param callback asynchronous callback
    */
+  @Timeout(write = 5 * 60)
   @Multipart
   @POST("/api/com.magnet.server/file/save")
   MagnetCall<String> upload(@Part("file") com.squareup.okhttp.RequestBody file,
@@ -49,9 +50,12 @@ public interface AttachmentService {
   //MagnetCall<Map<String, String>> upload(@Part("file") com.squareup.okhttp.RequestBody file,
   //    retrofit.Callback<Map<String, String>> callback);
 
+  @Timeout(read = 5 * 60)
   @GET("/api/com.magnet.server/file/download/{fileId}")
   MagnetCall<byte[]> downloadAsBytes(@Path("fileId") String fileId, retrofit.Callback<byte[]> callback);
 
+  @Timeout(read = 5 * 60)
   @GET("/api/com.magnet.server/file/download/{fileId}")
+  @Streaming
   MagnetCall<ResponseBody> downloadAsStream(@Path("fileId") String fileId, retrofit.Callback<ResponseBody> callback);
 }

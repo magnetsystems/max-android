@@ -15,6 +15,8 @@
  */
 package com.magnet.max.android.rest.qos.internal;
 
+import android.util.Log;
+import com.magnet.max.android.util.StringUtil;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.internal.Util;
 import java.io.ByteArrayOutputStream;
@@ -22,6 +24,10 @@ import java.io.IOException;
 import okio.Buffer;
 
 public class CacheUtils {
+  private static final String TAG = CacheUtils.class.getSimpleName();
+
+  public static final int MAX_CONTENT_LENGTH_TO_HASH = 4 * 1024;
+
   public static String getRequestHash(Request request) {
     StringBuilder sb = new StringBuilder();
     //Method and URL
@@ -31,7 +37,8 @@ public class CacheUtils {
 
     }
     //Body
-    if(null != request.body()) {
+    //Don't include body when it's multipart
+    if(toHashBody(request)) {
       try {
         Buffer buffer = new Buffer();
         Request copy = request.newBuilder().build();
@@ -64,5 +71,34 @@ public class CacheUtils {
     }
 
     return null;
+  }
+
+  private static boolean toHashBody(Request request) {
+    if(null == request.body()) {
+      return false;
+    }
+
+    if(null != request.body().contentType()) {
+      String mediaType = request.body().contentType().type();
+      if(StringUtil.isNotEmpty(mediaType)) {
+        mediaType = mediaType.trim().toLowerCase();
+        if ((mediaType.startsWith("multipart") || mediaType.startsWith("image") ||
+            mediaType.startsWith("video") || mediaType.startsWith("audio"))) {
+          return false;
+        }
+      }
+    }
+
+    try {
+      long length = request.body().contentLength();
+      if(length > MAX_CONTENT_LENGTH_TO_HASH) {
+        return false;
+      }
+    } catch (IOException e) {
+      Log.e(TAG, "Failed to get body length", e);
+      return false;
+    }
+
+    return true;
   }
 }
