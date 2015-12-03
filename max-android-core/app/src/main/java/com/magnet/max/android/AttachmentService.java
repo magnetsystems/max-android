@@ -26,17 +26,21 @@ import retrofit.http.Part;
 import retrofit.http.Path;
 import retrofit.http.Streaming;
 
+/**
+ * The service to save/download large content to server
+ */
 public interface AttachmentService {
+
   /**
-   *
+   * Upload
    * POST
-   * @param file style:Query optional:false
+   * @param body style:Query optional:false
    * @param callback asynchronous callback
    */
   @Timeout(write = 5 * 60)
   @Multipart
   @POST("/api/com.magnet.server/file/save")
-  MagnetCall<String> upload(@Part("file") com.squareup.okhttp.RequestBody file,
+  MagnetCall<String> upload(@Part("file") com.squareup.okhttp.RequestBody body,
       retrofit.Callback<String> callback);
 
   ///**

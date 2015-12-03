@@ -172,6 +172,7 @@ task androidJavadocs(type: Javadoc) {
     include 'com/magnet/max/android/Device.java'
     include 'com/magnet/max/android/MaxModule.java'
     include 'com/magnet/max/android/User.java'
+    include 'com/magnet/max/android/Attachment.java'
     include '**/OsType.java'
     include '**/DeviceStatus.java'
     include '**/UserStatus.java'
