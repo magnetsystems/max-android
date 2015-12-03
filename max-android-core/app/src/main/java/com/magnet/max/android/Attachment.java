@@ -35,6 +35,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.UUID;
 import retrofit.Callback;
 import retrofit.Response;
+import retrofit.http.POST;
 
 /**
  * Attachment is used to save/download large content (such as file) to/from Max server.
@@ -208,6 +209,8 @@ final public class Attachment {
     if(null == content || content.length == 0) {
       throw new IllegalArgumentException("content shouldn't be empty");
     }
+    validateMimeType(mimeType);
+
     this.length = content.length;
     sourceType = ContentSourceType.BYTE_ARRAY;
     data = content;
@@ -234,6 +237,8 @@ final public class Attachment {
     if(null == content) {
       throw new IllegalArgumentException("content shouldn't be null");
     }
+    validateMimeType(mimeType);
+
     sourceType = ContentSourceType.INPUT_STREAM;
     create(content, mimeType, name, summary);
   }
@@ -258,6 +263,8 @@ final public class Attachment {
     if(StringUtil.isEmpty(content)) {
       throw new IllegalArgumentException("content shouldn't be empty");
     }
+    validateMimeType(mimeType);
+
     this.length = content.length();
     sourceType = ContentSourceType.TEXT;
     //this.charsetName = charsetName;
@@ -454,6 +461,9 @@ final public class Attachment {
    * @param listener
    */
   public void download(String destinationFilePath, DownloadAsFileListener listener) {
+    if(StringUtil.isEmpty(destinationFilePath)) {
+      throw new IllegalArgumentException("destinationFilePath shouldn't be null");
+    }
     download(new File(destinationFilePath), listener);
   }
 
@@ -463,6 +473,10 @@ final public class Attachment {
    * @param listener
    */
   public void download(File destinationFile, DownloadAsFileListener listener) {
+    if(null == destinationFile) {
+      throw new IllegalArgumentException("destinationFile shouldn't be null");
+    }
+
     checkIfContentAvailable();
 
     AbstractDownloader downloader = new FileDownloader(destinationFile, listener);
@@ -576,6 +590,12 @@ final public class Attachment {
     return defaultDownloadDir;
   }
 
+  private void validateMimeType(String mimeType) {
+    if(StringUtil.isEmpty(mimeType)) {
+      throw new IllegalArgumentException("mimeType shouldn't be null");
+    }
+  }
+
   private abstract class AbstractDownloader {
 
     protected final AbstractDownloadListener listener;
@@ -615,7 +635,7 @@ final public class Attachment {
       } else if(currentStatus == Status.INLINE) {
 
       } else if (currentStatus == Status.TRANSFERING) {
-        throw new IllegalStateException("Attachment is being downloading");
+        throw new IllegalStateException("Attachment is downloading");
       }
     }
   }
