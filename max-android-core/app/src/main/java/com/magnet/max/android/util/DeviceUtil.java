@@ -34,7 +34,7 @@ public class DeviceUtil {
   public static String getDeviceId(Context context) {
     String result = uniqueIdRef.get();
     if (result == null) {
-      result = getOrGenerateDeviceId(context);
+      result = getOrGenerateSimpleDeviceId(context);
     }
     return result;
   }
@@ -69,6 +69,31 @@ public class DeviceUtil {
           result = toBaseNString(devId.getBytes(), 36);
         }
       }
+      // save it to shared preferences
+      shared.edit()
+          .putString(KEY_DEVICE_ID, result)
+          .commit();
+    }
+    uniqueIdRef.set(result);
+    return result;
+  }
+
+  private static synchronized String getOrGenerateSimpleDeviceId(Context context) {
+    if (null == context) {
+      throw new IllegalArgumentException("Context may not be null");
+    }
+
+    if(uniqueIdRef.get() != null) {
+      return uniqueIdRef.get();
+    }
+
+    SharedPreferences shared =
+        context.getApplicationContext().
+            getSharedPreferences(SHARED_PREF_FILENAME, Context.MODE_PRIVATE);
+
+    String result = shared.getString(KEY_DEVICE_ID, null);
+    if (StringUtil.isEmpty(result)) {
+      result = UUID.randomUUID().toString();
       // save it to shared preferences
       shared.edit()
           .putString(KEY_DEVICE_ID, result)
