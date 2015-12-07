@@ -38,10 +38,10 @@ import java.util.Properties;
  */
 public class MaxAndroidPropertiesConfig implements MaxAndroidConfig {
 
-  private static final String PROP_CLIENT_ID = "client_id";
-  private static final String PROP_CLIENT_SECRET = "client_secret";
-  private static final String PROP_BASE_URL = "baseUrl";
-  private static final String PROP_SCOPE = "scope";
+  public static final String PROP_CLIENT_ID = "client_id";
+  public static final String PROP_CLIENT_SECRET = "client_secret";
+  public static final String PROP_BASE_URL = "baseUrl";
+  public static final String PROP_SCOPE = "scope";
 
   private static final String TAG = MaxAndroidPropertiesConfig.class.getSimpleName();
   private final Properties mProps;

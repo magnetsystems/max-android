@@ -22,6 +22,7 @@ import com.magnet.max.android.auth.model.AppLoginWithDeviceResponse;
 import com.magnet.max.android.auth.model.ApplicationToken;
 import com.magnet.max.android.auth.model.DeviceInfo;
 import com.magnet.max.android.config.MaxAndroidConfig;
+import com.magnet.max.android.config.MaxAndroidPropertiesConfig;
 import com.magnet.max.android.util.AuthUtil;
 import com.magnet.max.android.util.StringUtil;
 import com.squareup.okhttp.OkHttpClient;
@@ -83,7 +84,8 @@ import retrofit.Response;
 
     // Check if cached token is valid
     final ApplicationToken applicationTokenCache = ModuleManager.getApplicationToken();
-    if (null != applicationTokenCache && !applicationTokenCache.isAboutToExpireInMinutes(30)) {
+    if (null != applicationTokenCache && !applicationTokenCache.isAboutToExpireInMinutes(30)
+        && config.getClientId().equals(ModuleManager.getServerConfigs().get(MaxAndroidPropertiesConfig.PROP_CLIENT_ID))) {
       Log.i(TAG, "Using cached application token");
 
       applicationService.getMobileConfig(new Callback<Map<String, String>>() {
