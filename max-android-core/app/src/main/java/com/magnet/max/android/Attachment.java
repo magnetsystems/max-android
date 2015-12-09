@@ -34,6 +34,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import retrofit.Callback;
 import retrofit.Response;
@@ -163,6 +165,8 @@ final public class Attachment {
 
   private String senderId;
 
+  private transient Map<String, String> metaData;
+
   protected transient AttachmentService attachmentService;
 
   /**
@@ -281,6 +285,7 @@ final public class Attachment {
     this.summary = description;
     this.mimeType = mimeType;
     this.status = Status.INIT;
+    this.senderId = User.getCurrentUserId();
   }
 
   private byte[] getAsBytes() {
@@ -385,10 +390,6 @@ final public class Attachment {
   }
 
   private String getSenderId() {
-    if(StringUtil.isEmpty(senderId)) {
-      senderId = User.getCurrentUserId();
-    }
-
     return senderId;
   }
 
@@ -443,13 +444,14 @@ final public class Attachment {
         }
       };
 
+      RequestBody requestBody = null;
       if(sourceType == ContentSourceType.FILE) {
-        getAttachmentService().upload(RequestBody.create(MediaType.parse(getMimeType()), (File) content), uploadCallback)
-            .executeInBackground();
+        requestBody = RequestBody.create(MediaType.parse(getMimeType()), (File) content);
       } else {
-        getAttachmentService().upload(RequestBody.create(MediaType.parse(getMimeType()), getAsBytes()), uploadCallback)
-            .executeInBackground();
+        requestBody = RequestBody.create(MediaType.parse(getMimeType()), getAsBytes());
       }
+      getAttachmentService().upload(metaData, requestBody, uploadCallback)
+          .executeInBackground();
 
       status = Status.TRANSFERING;
     } else if(status == Status.TRANSFERING) {
@@ -519,6 +521,30 @@ final public class Attachment {
 
     AbstractDownloader downloader = new StreamDownloader(listener);
     downloader.download();
+  }
+
+  /**
+   * Added key-value pair meta data for the attachment which will be saved on server
+   * @param key
+   * @param value
+   */
+  public void addMetaData(String key, String value) {
+    if(StringUtil.isEmpty(key)) {
+      throw new IllegalArgumentException("Key shouldn't be null");
+    }
+
+    if(null == metaData) {
+      metaData = new HashMap<>();
+    }
+
+    metaData.put(key, value);
+  }
+
+  public void setMetaData(Map<String, String> metaData) {
+    if(null != metaData) {
+      metaData.clear();
+    }
+    this.metaData = metaData;
   }
 
   /**
@@ -627,6 +653,9 @@ final public class Attachment {
     if(StringUtil.isEmpty(attachmentId)) {
       throw new IllegalStateException("AttachmentId is not available");
     }
+    if(StringUtil.isEmpty(senderId)) {
+      throw new IllegalStateException("SenderId shouldn't be null");
+    }
   }
 
   private static File getDefaultDownloadDir() {
@@ -700,7 +729,7 @@ final public class Attachment {
     }
 
     @Override protected void doDownload() {
-      getAttachmentService().downloadAsBytes(attachmentId, new Callback<byte[]>() {
+      getAttachmentService().downloadAsBytes(attachmentId, senderId, new Callback<byte[]>() {
         @Override public void onResponse(Response<byte[]> response) {
           if (response.isSuccess()) {
             data = response.body();
@@ -739,7 +768,7 @@ final public class Attachment {
     }
 
     @Override protected void doDownload() {
-      getAttachmentService().downloadAsStream(attachmentId, new Callback<ResponseBody>() {
+      getAttachmentService().downloadAsStream(attachmentId, senderId, new Callback<ResponseBody>() {
         @Override public void onResponse(final Response<ResponseBody> response) {
           if (response.isSuccess()) {
             // Read the InputStream in AsyncTask
@@ -824,7 +853,7 @@ final public class Attachment {
     }
 
     @Override protected void doDownload() {
-      getAttachmentService().downloadAsStream(attachmentId, new Callback<ResponseBody>() {
+      getAttachmentService().downloadAsStream(attachmentId, senderId, new Callback<ResponseBody>() {
         @Override public void onResponse(Response<ResponseBody> response) {
           if (response.isSuccess()) {
             status = Status.COMPLETE;
