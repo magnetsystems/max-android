@@ -37,6 +37,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import retrofit.Callback;
 import retrofit.Response;
 import retrofit.http.POST;
@@ -412,6 +413,7 @@ final public class Attachment {
         listener.onStart(this);
       }
 
+      final AtomicReference<Long> startTime = new AtomicReference<>();
       Callback<String> uploadCallback = new Callback<String>() {
         @Override public void onResponse(Response<String> response) {
           if (response.isSuccess()) {
@@ -422,6 +424,7 @@ final public class Attachment {
               if (null != listener) {
                 listener.onComplete(Attachment.this);
               }
+              Log.d(TAG, "It took " + (System.currentTimeMillis() - startTime.get())/1000 + " seconds to uploadd attachment " + name);
             } else {
               handleError(new Exception("Can't attachmentId from response"));
             }
@@ -450,6 +453,7 @@ final public class Attachment {
       } else {
         requestBody = RequestBody.create(MediaType.parse(getMimeType()), getAsBytes());
       }
+      startTime.set(System.currentTimeMillis());
       getAttachmentService().upload(metaData, requestBody, uploadCallback)
           .executeInBackground();
 
@@ -682,6 +686,7 @@ final public class Attachment {
 
     protected final AbstractDownloadListener listener;
     protected final ContentSourceType sourceType;
+    protected long startTime;
 
     abstract protected void doDownload();
 
@@ -692,6 +697,9 @@ final public class Attachment {
 
     public void download() {
       Status currentStatus = getStatus();
+
+      startTime = System.currentTimeMillis();
+
       if (currentStatus == Status.COMPLETE) {
         //TODO : content is not cached right now, alway re-download
         //// Already downloaded
@@ -720,6 +728,10 @@ final public class Attachment {
         throw new IllegalStateException("Attachment is downloading");
       }
     }
+
+    protected void logTime() {
+      Log.d(TAG, "It took " + (System.currentTimeMillis() - startTime)/1000 + " seconds to download attachment " + attachmentId);
+    }
   }
 
   private class BytesDownloader extends AbstractDownloader {
@@ -735,6 +747,7 @@ final public class Attachment {
             data = response.body();
             length = data.length;
             status = Status.COMPLETE;
+            logTime();
             if (null != listener) {
               listener.onComplete(data);
             }
@@ -779,6 +792,7 @@ final public class Attachment {
                   writeInputStreamToFile(response.body().byteStream(), destinationFile);
                   status = Attachment.Status.COMPLETE;
                   length = destinationFile.length();
+                  logTime();
                 } catch (IOException e) {
                   return e;
                 }
@@ -859,6 +873,7 @@ final public class Attachment {
             status = Status.COMPLETE;
             try {
               length = response.body().contentLength();
+              logTime();
               if (null != listener) {
                 listener.onComplete(response.body().byteStream());
               }
