@@ -159,6 +159,8 @@ final public class Attachment {
 
   protected transient String downloadUrl;
 
+  private String senderId;
+
   protected transient AttachmentService attachmentService;
 
   /**
@@ -328,7 +330,8 @@ final public class Attachment {
         urlBuilder.append("/");
       }
       urlBuilder.append("com.magnet.server/file/download/").append(attachmentId)
-          .append("?access_token=").append(ModuleManager.getUserToken().getAccessToken());
+          .append("?access_token=").append(ModuleManager.getUserToken().getAccessToken())
+          .append("&").append("user_id=").append(getSenderId());
 
       downloadUrl = urlBuilder.toString();
     }
@@ -377,6 +380,14 @@ final public class Attachment {
    */
   public long getLength() {
     return length;
+  }
+
+  private String getSenderId() {
+    if(StringUtil.isEmpty(senderId)) {
+      senderId = User.getCurrentUserId();
+    }
+
+    return senderId;
   }
 
   /**
