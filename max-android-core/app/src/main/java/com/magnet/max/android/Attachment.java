@@ -19,6 +19,8 @@ package com.magnet.max.android;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
+import com.magnet.max.android.util.EqualityUtil;
+import com.magnet.max.android.util.HashCodeBuilder;
 import com.magnet.max.android.util.StringUtil;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.RequestBody;
@@ -506,6 +508,46 @@ final public class Attachment {
 
     AbstractDownloader downloader = new StreamDownloader(listener);
     downloader.download();
+  }
+
+  /**
+   * Compares this Attachment object with the specified object and indicates if they
+   * are equal. Following properties are compared :
+   * <p><ul>
+   * <li>attachmentId
+   * <li>name
+   * <li>mimeType
+   * <li>status
+   * <li>length
+   * <li>sourceType
+   * </ul><p>
+   * @param obj
+   * @return
+   */
+  @Override
+  public boolean equals(Object obj) {
+    if(!EqualityUtil.quickCheck(this, obj)) {
+      return false;
+    }
+
+    Attachment theOther = (Attachment) obj;
+    return StringUtil.isStringValueEqual(attachmentId, theOther.getAttachmentId()) &&
+        StringUtil.isStringValueEqual(name, theOther.getName()) &&
+        StringUtil.isStringValueEqual(mimeType, theOther.getMimeType()) &&
+        status == theOther.getStatus() &&
+        length == theOther.getLength() &&
+        sourceType == theOther.getSourceType();
+  }
+
+  /**
+   *  Returns an integer hash code for this object.
+   *  @see #equals(Object) for the properties used for hash calculation.
+   * @return
+   */
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().hash(attachmentId).hash(name).hash(mimeType)
+        .hash(status).hash(length).hash(sourceType).hashCode();
   }
 
   protected AttachmentService getAttachmentService() {

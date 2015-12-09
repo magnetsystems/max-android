@@ -21,9 +21,11 @@ import com.magnet.max.android.auth.model.UpdateProfileRequest;
 import com.magnet.max.android.auth.model.UserLoginResponse;
 import com.magnet.max.android.auth.model.UserRealm;
 import com.magnet.max.android.auth.model.UserRegistrationInfo;
-import com.magnet.max.android.auth.model.UserStatus;
 import com.magnet.max.android.auth.model.UserToken;
 import com.magnet.max.android.util.AuthUtil;
+import com.magnet.max.android.util.EqualityUtil;
+import com.magnet.max.android.util.HashCodeBuilder;
+import com.magnet.max.android.util.StringUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -351,5 +353,46 @@ final public class User {
     }
 
     return sUserService;
+  }
+
+  /**
+   * Compares this User object with the specified object and indicates if they
+   * are equal. Following properties are compared :
+   * <p><ul>
+   * <li>userIdentifier
+   * <li>email
+   * <li>userName
+   * <li>firstName
+   * <li>lastName
+   * <li>userRealm
+   * </ul><p>
+   * @param obj
+   * @return
+   */
+  @Override
+  public boolean equals(Object obj) {
+    if(!EqualityUtil.quickCheck(this, obj)) {
+      return false;
+    }
+
+    User theOther = (User) obj;
+
+    return StringUtil.isStringValueEqual(mUserIdentifier, theOther.getUserIdentifier()) &&
+        StringUtil.isStringValueEqual(mEmail, theOther.getEmail()) &&
+        StringUtil.isStringValueEqual(mUserName, theOther.getUserName()) &&
+        StringUtil.isStringValueEqual(mFirstName, theOther.getFirstName()) &&
+        StringUtil.isStringValueEqual(mLastName, theOther.getLastName()) &&
+        (mUserRealm == theOther.getUserRealm());
+  }
+
+  /**
+   *  Returns an integer hash code for this object.
+   *  @see #equals(Object) for the properties used for hash calculation.
+   * @return
+   */
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().hash(mUserIdentifier).hash(mEmail).hash(mUserName)
+        .hash(mFirstName).hash(mLastName).hash(mUserRealm).hashCode();
   }
 }
