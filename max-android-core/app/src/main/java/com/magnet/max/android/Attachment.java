@@ -421,10 +421,10 @@ final public class Attachment {
             if (StringUtil.isNotEmpty(result)) {
               attachmentId = result;
               status = Status.COMPLETE;
+              Log.d(TAG, "It took " + (System.currentTimeMillis() - startTime.get())/1000 + " seconds to upload attachment " + attachmentId);
               if (null != listener) {
                 listener.onComplete(Attachment.this);
               }
-              Log.d(TAG, "It took " + (System.currentTimeMillis() - startTime.get())/1000 + " seconds to uploadd attachment " + name);
             } else {
               handleError(new Exception("Can't attachmentId from response"));
             }
