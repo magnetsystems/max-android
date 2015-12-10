@@ -19,6 +19,8 @@ package com.magnet.max.android;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
+import com.magnet.max.android.util.EqualityUtil;
+import com.magnet.max.android.util.HashCodeBuilder;
 import com.magnet.max.android.util.StringUtil;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.RequestBody;
@@ -32,7 +34,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import retrofit.Callback;
 import retrofit.Response;
 import retrofit.http.POST;
@@ -159,6 +164,10 @@ final public class Attachment {
 
   protected transient String downloadUrl;
 
+  private String senderId;
+
+  private transient Map<String, String> metaData;
+
   protected transient AttachmentService attachmentService;
 
   /**
@@ -277,6 +286,7 @@ final public class Attachment {
     this.summary = description;
     this.mimeType = mimeType;
     this.status = Status.INIT;
+    this.senderId = User.getCurrentUserId();
   }
 
   private byte[] getAsBytes() {
@@ -328,7 +338,8 @@ final public class Attachment {
         urlBuilder.append("/");
       }
       urlBuilder.append("com.magnet.server/file/download/").append(attachmentId)
-          .append("?access_token=").append(ModuleManager.getUserToken().getAccessToken());
+          .append("?access_token=").append(ModuleManager.getUserToken().getAccessToken())
+          .append("&").append("user_id=").append(getSenderId());
 
       downloadUrl = urlBuilder.toString();
     }
@@ -379,6 +390,10 @@ final public class Attachment {
     return length;
   }
 
+  private String getSenderId() {
+    return senderId;
+  }
+
   /**
    * Upload the attachment to Max Server
    * @param listener
@@ -398,6 +413,7 @@ final public class Attachment {
         listener.onStart(this);
       }
 
+      final AtomicReference<Long> startTime = new AtomicReference<>();
       Callback<String> uploadCallback = new Callback<String>() {
         @Override public void onResponse(Response<String> response) {
           if (response.isSuccess()) {
@@ -405,6 +421,7 @@ final public class Attachment {
             if (StringUtil.isNotEmpty(result)) {
               attachmentId = result;
               status = Status.COMPLETE;
+              Log.d(TAG, "It took " + (System.currentTimeMillis() - startTime.get())/1000 + " seconds to upload attachment " + attachmentId);
               if (null != listener) {
                 listener.onComplete(Attachment.this);
               }
@@ -430,13 +447,15 @@ final public class Attachment {
         }
       };
 
+      RequestBody requestBody = null;
       if(sourceType == ContentSourceType.FILE) {
-        getAttachmentService().upload(RequestBody.create(MediaType.parse(getMimeType()), (File) content), uploadCallback)
-            .executeInBackground();
+        requestBody = RequestBody.create(MediaType.parse(getMimeType()), (File) content);
       } else {
-        getAttachmentService().upload(RequestBody.create(MediaType.parse(getMimeType()), getAsBytes()), uploadCallback)
-            .executeInBackground();
+        requestBody = RequestBody.create(MediaType.parse(getMimeType()), getAsBytes());
       }
+      startTime.set(System.currentTimeMillis());
+      getAttachmentService().upload(metaData, requestBody, uploadCallback)
+          .executeInBackground();
 
       status = Status.TRANSFERING;
     } else if(status == Status.TRANSFERING) {
@@ -508,6 +527,70 @@ final public class Attachment {
     downloader.download();
   }
 
+  /**
+   * Added key-value pair meta data for the attachment which will be saved on server
+   * @param key
+   * @param value
+   */
+  public void addMetaData(String key, String value) {
+    if(StringUtil.isEmpty(key)) {
+      throw new IllegalArgumentException("Key shouldn't be null");
+    }
+
+    if(null == metaData) {
+      metaData = new HashMap<>();
+    }
+
+    metaData.put(key, value);
+  }
+
+  public void setMetaData(Map<String, String> metaData) {
+    if(null != metaData) {
+      metaData.clear();
+    }
+    this.metaData = metaData;
+  }
+
+  /**
+   * Compares this Attachment object with the specified object and indicates if they
+   * are equal. Following properties are compared :
+   * <p><ul>
+   * <li>attachmentId
+   * <li>name
+   * <li>mimeType
+   * <li>status
+   * <li>length
+   * <li>sourceType
+   * </ul><p>
+   * @param obj
+   * @return
+   */
+  @Override
+  public boolean equals(Object obj) {
+    if(!EqualityUtil.quickCheck(this, obj)) {
+      return false;
+    }
+
+    Attachment theOther = (Attachment) obj;
+    return StringUtil.isStringValueEqual(attachmentId, theOther.getAttachmentId()) &&
+        StringUtil.isStringValueEqual(name, theOther.getName()) &&
+        StringUtil.isStringValueEqual(mimeType, theOther.getMimeType()) &&
+        status == theOther.getStatus() &&
+        length == theOther.getLength() &&
+        sourceType == theOther.getSourceType();
+  }
+
+  /**
+   *  Returns an integer hash code for this object.
+   *  @see #equals(Object) for the properties used for hash calculation.
+   * @return
+   */
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().hash(attachmentId).hash(name).hash(mimeType)
+        .hash(status).hash(length).hash(sourceType).hashCode();
+  }
+
   protected AttachmentService getAttachmentService() {
     if(null == attachmentService) {
       attachmentService = MaxCore.create(AttachmentService.class);
@@ -574,6 +657,9 @@ final public class Attachment {
     if(StringUtil.isEmpty(attachmentId)) {
       throw new IllegalStateException("AttachmentId is not available");
     }
+    if(StringUtil.isEmpty(senderId)) {
+      throw new IllegalStateException("SenderId shouldn't be null");
+    }
   }
 
   private static File getDefaultDownloadDir() {
@@ -600,6 +686,7 @@ final public class Attachment {
 
     protected final AbstractDownloadListener listener;
     protected final ContentSourceType sourceType;
+    protected long startTime;
 
     abstract protected void doDownload();
 
@@ -610,6 +697,9 @@ final public class Attachment {
 
     public void download() {
       Status currentStatus = getStatus();
+
+      startTime = System.currentTimeMillis();
+
       if (currentStatus == Status.COMPLETE) {
         //TODO : content is not cached right now, alway re-download
         //// Already downloaded
@@ -638,6 +728,10 @@ final public class Attachment {
         throw new IllegalStateException("Attachment is downloading");
       }
     }
+
+    protected void logTime() {
+      Log.d(TAG, "It took " + (System.currentTimeMillis() - startTime)/1000 + " seconds to download attachment " + attachmentId);
+    }
   }
 
   private class BytesDownloader extends AbstractDownloader {
@@ -647,12 +741,13 @@ final public class Attachment {
     }
 
     @Override protected void doDownload() {
-      getAttachmentService().downloadAsBytes(attachmentId, new Callback<byte[]>() {
+      getAttachmentService().downloadAsBytes(attachmentId, senderId, new Callback<byte[]>() {
         @Override public void onResponse(Response<byte[]> response) {
           if (response.isSuccess()) {
             data = response.body();
             length = data.length;
             status = Status.COMPLETE;
+            logTime();
             if (null != listener) {
               listener.onComplete(data);
             }
@@ -686,7 +781,7 @@ final public class Attachment {
     }
 
     @Override protected void doDownload() {
-      getAttachmentService().downloadAsStream(attachmentId, new Callback<ResponseBody>() {
+      getAttachmentService().downloadAsStream(attachmentId, senderId, new Callback<ResponseBody>() {
         @Override public void onResponse(final Response<ResponseBody> response) {
           if (response.isSuccess()) {
             // Read the InputStream in AsyncTask
@@ -697,6 +792,7 @@ final public class Attachment {
                   writeInputStreamToFile(response.body().byteStream(), destinationFile);
                   status = Attachment.Status.COMPLETE;
                   length = destinationFile.length();
+                  logTime();
                 } catch (IOException e) {
                   return e;
                 }
@@ -771,12 +867,13 @@ final public class Attachment {
     }
 
     @Override protected void doDownload() {
-      getAttachmentService().downloadAsStream(attachmentId, new Callback<ResponseBody>() {
+      getAttachmentService().downloadAsStream(attachmentId, senderId, new Callback<ResponseBody>() {
         @Override public void onResponse(Response<ResponseBody> response) {
           if (response.isSuccess()) {
             status = Status.COMPLETE;
             try {
               length = response.body().contentLength();
+              logTime();
               if (null != listener) {
                 listener.onComplete(response.body().byteStream());
               }

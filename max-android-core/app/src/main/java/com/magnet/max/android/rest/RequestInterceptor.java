@@ -47,7 +47,8 @@ public class RequestInterceptor implements Interceptor {
     Log.i(TAG, "---------Intercepting url : " + request.method() + " " + request.urlString());
 
     CallOptions options = requestManager.popRequestOptions(request);
-    if(null != options && null != options.getCacheOptions()) {
+    boolean isCacheEnabled = null != options && null != options.getCacheOptions();
+    if(isCacheEnabled) {
       if (options.getCacheOptions().isAlwaysUseCacheIfOffline()
           && ConnectivityManager.getInstance().getConnectivityStatus() == ConnectivityManager.TYPE_NOT_CONNECTED) {
         Response cachedResponse = cacheManager.getCachedResponse(request, options.getCacheOptions());
@@ -80,7 +81,7 @@ public class RequestInterceptor implements Interceptor {
 
     boolean useMock = false;
     if(null != options) {
-      if(null != options.getCacheOptions()) {
+      if(isCacheEnabled) {
         useMock = options.getCacheOptions().useMock();
       } else if(null != options.getReliableCallOptions()) {
         useMock = options.getReliableCallOptions().useMock();
@@ -123,7 +124,7 @@ public class RequestInterceptor implements Interceptor {
 
     //Save/Update response in cache
     if(response.isSuccessful()
-        && null != options && null != options.getCacheOptions()
+        && isCacheEnabled
         && (options.getCacheOptions().getMaxCacheAge() > 0 || options.getCacheOptions().isAlwaysUseCacheIfOffline())) {
       return cacheManager.cacheResponse(request, response, options.getCacheOptions());
     }

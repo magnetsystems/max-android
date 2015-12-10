@@ -20,8 +20,10 @@ import com.magnet.max.android.auth.model.DeviceInfo;
 import com.magnet.max.android.auth.model.DeviceStatus;
 import com.magnet.max.android.auth.model.OsType;
 import com.magnet.max.android.auth.model.PushAuthorityType;
-import com.magnet.max.android.auth.model.UserStatus;
 import com.magnet.max.android.util.DeviceUtil;
+import com.magnet.max.android.util.EqualityUtil;
+import com.magnet.max.android.util.HashCodeBuilder;
+import com.magnet.max.android.util.StringUtil;
 import retrofit.Callback;
 import retrofit.MagnetCall;
 import retrofit.Response;
@@ -160,4 +162,41 @@ public class Device {
     return deviceId;
   }
 
+  /**
+   * Compares this Device object with the specified object and indicates if they
+   * are equal. Following properties are compared :
+   * <p><ul>
+   * <li>deviceId
+   * <li>deviceToken
+   * <li>os
+   * <li>pushAuthority
+   * <li>deviceStatus
+   * </ul><p>
+   * @param obj
+   * @return
+   */
+  @Override
+  public boolean equals(Object obj) {
+    if(!EqualityUtil.quickCheck(this, obj)) {
+      return false;
+    }
+
+    Device theOther = (Device) obj;
+    return StringUtil.isStringValueEqual(deviceId, theOther.getDeviceId()) &&
+        StringUtil.isStringValueEqual(deviceToken, theOther.getDeviceToken()) &&
+        os == theOther.getOs() &&
+        pushAuthority == theOther.getPushAuthority() &&
+        deviceStatus == theOther.getDeviceStatus();
+  }
+
+  /**
+   *  Returns an integer hash code for this object.
+   *  @see #equals(Object) for the properties used for hash calculation.
+   * @return
+   */
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().hash(deviceId).hash(deviceToken).hash(os)
+        .hash(pushAuthority).hash(deviceStatus).hashCode();
+  }
 }
