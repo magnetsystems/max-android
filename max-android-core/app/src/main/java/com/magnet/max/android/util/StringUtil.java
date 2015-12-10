@@ -30,8 +30,4 @@ public class StringUtil {
       return s1.equals(s2);
     }
   }
-
-  public static int getHash(String s) {
-    return isNotEmpty(s) ? s.hashCode() : 0;
-  }
 }
