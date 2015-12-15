@@ -26,6 +26,7 @@ import com.magnet.max.android.util.AuthUtil;
 import com.magnet.max.android.util.EqualityUtil;
 import com.magnet.max.android.util.HashCodeBuilder;
 import com.magnet.max.android.util.StringUtil;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -205,6 +206,14 @@ final public class User {
    * @param callback
    */
   public static void getUsersByUserNames(List<String> userNames, final ApiCallback<List<User>> callback) {
+    if(null == userNames || userNames.isEmpty()) {
+      if(null != callback) {
+        callback.success(Collections.EMPTY_LIST);
+      }
+
+      return;
+    }
+
     getUserService().getUsersByUserNames(userNames, new Callback<List<User>>() {
       @Override public void onResponse(Response<List<User>> response) {
         ApiCallbackHelper.executeCallback(callback, response);
@@ -222,6 +231,14 @@ final public class User {
    * @param callback
    */
   public static void getUsersByUserIds(List<String> userIds, final ApiCallback<List<User>> callback) {
+    if(null == userIds || userIds.isEmpty()) {
+      if(null != callback) {
+        callback.success(Collections.EMPTY_LIST);
+      }
+
+      return;
+    }
+
     getUserService().getUsersByUserIds(userIds, new Callback<List<User>>() {
       @Override public void onResponse(Response<List<User>> response) {
         ApiCallbackHelper.executeCallback(callback, response);
