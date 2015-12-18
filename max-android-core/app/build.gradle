@@ -102,7 +102,7 @@ dependencies {
     compile 'com.squareup.okhttp:okhttp:2.5.0'
     compile 'com.squareup.okhttp:okhttp-ws:2.5.0'
     compile 'com.google.code.gson:gson:2.3.1'
-    compile "com.android.support:support-v4:18.0.+"
+    compile "com.android.support:support-v4:20.0.+"
 
     androidTestCompile 'org.apache.commons:commons-lang3:3.3.2'
     androidTestCompile 'com.squareup.assertj:assertj-android:1.1.1'
