@@ -13,14 +13,14 @@ The Magnet Max Android SDK has these prerequisites:
 
 ## Releases
 
-Current release: 2.2-b-4
+Current release: 2.2.0
 
 ## Setup
 
 #### Gradle
 
 ```
-    compile('com.magnet.max.android:magnet-max-android-sdk:2.2-b-4@aar') {
+    compile('com.magnet.max.android:magnet-max-android-sdk:2.2.0@aar') {
         transitive = true
     }
 ```
