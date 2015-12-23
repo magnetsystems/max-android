@@ -44,16 +44,18 @@ public interface MaxModule {
    * @param appToken
    * @param appId
    * @param deviceId
+   * @param callback
    */
-  void onAppTokenUpdate(String appToken, String appId, String deviceId);
+  void onAppTokenUpdate(String appToken, String appId, String deviceId, ApiCallback<Boolean> callback);
 
   /**
    * Called when user access token is obtained or updated
    * @param userToken
    * @param userId
    * @param deviceId
+   * @param callback
    */
-  void onUserTokenUpdate(String userToken, String userId, String deviceId);
+  void onUserTokenUpdate(String userToken, String userId, String deviceId, ApiCallback<Boolean> callback);
 
   /**
    * Called when MagnetServiceAdapter is closed
@@ -63,11 +65,13 @@ public interface MaxModule {
 
   /**
    * Called when user logout @see User.logout
+   * @param callback
    */
-  void onUserTokenInvalidate();
+  void onUserTokenInvalidate(ApiCallback<Boolean> callback);
 
   /**
    *
+   * @param callback
    */
-  void deInitModule();
+  void deInitModule(ApiCallback<Boolean> callback);
 }
