@@ -78,7 +78,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
   public static synchronized void deInit() {
     for(ModuleInfo s : getAllRegisteredModules()) {
-      s.getModule().deInitModule();
+      s.getModule().deInitModule(null);
     }
     registeredModules.clear();
   }
@@ -109,12 +109,12 @@ import java.util.concurrent.atomic.AtomicReference;
       Log.d(TAG, "--------appToken is availabe when register : " + appTokenRef.get());
       module.onInit(MaxCore.getApplicationContext(), serverConfigsRef.get(), callback);
       module.onAppTokenUpdate(appTokenRef.get().getAccessToken(), appTokenRef.get().getMmxAppId(),
-          Device.getCurrentDeviceId());
+          Device.getCurrentDeviceId(), callback);
     }
     if(userTokenRef.get() != null) {
       Log.d(TAG, "--------userToken is availabe when register : " + userTokenRef.get());
       module.onUserTokenUpdate(userTokenRef.get().getAccessToken(), userIdRef.get(),
-          Device.getCurrentDeviceId());
+          Device.getCurrentDeviceId(), callback);
     }
   }
 
@@ -129,7 +129,7 @@ import java.util.concurrent.atomic.AtomicReference;
     int existingIndex = findModule(existingModules, module);
     if(existingIndex >= 0) {
       existingModules.remove(existingIndex);
-      module.deInitModule();
+      module.deInitModule(null);
       Log.d(TAG, "deinit and remove module " + module.getName());
 
       if(null != callback) {
@@ -172,7 +172,8 @@ import java.util.concurrent.atomic.AtomicReference;
     //}
   }
 
-  public static void onUserLogin(final String userId, UserToken token, boolean rememberMe) {
+  public static boolean onUserLogin(final String userId, UserToken token, boolean rememberMe, ApiCallback<Boolean> callback) {
+    boolean isCallbackCalled = false;
     if(null != token) {
       Log.i(TAG, "userLogin success : ");
 
@@ -180,7 +181,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
       userIdRef.set(userId);
 
-      notifyUserTokenObservers();
+      isCallbackCalled = notifyUserTokenObservers(callback);
 
       registerDevice();
 
@@ -189,9 +190,9 @@ import java.util.concurrent.atomic.AtomicReference;
       }
 
       tokenLocalStore.saveRememberMe(rememberMe);
-    } else {
-
     }
+
+    return isCallbackCalled;
   }
 
   public static void onUserTokenRefresh(final String userId, UserToken token) {
@@ -202,7 +203,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
       userIdRef.set(userId);
 
-      notifyUserTokenObservers();
+      notifyUserTokenObservers(null);
 
       tokenLocalStore.saveUserToken();
     } else {
@@ -306,24 +307,29 @@ import java.util.concurrent.atomic.AtomicReference;
       Log.i(TAG, "notify onAppTokenUpdate for : " + s.getModule().getName());
       s.getModule().onAppTokenUpdate(
           null != appTokenRef.get() ? appTokenRef.get().getAccessToken() : null,
-          MaxCore.getConfig().getClientId(), Device.getCurrentDeviceId());
+          MaxCore.getConfig().getClientId(), Device.getCurrentDeviceId(), null);
     }
   }
 
-  private static void notifyUserTokenObservers() {
+  private static boolean notifyUserTokenObservers(ApiCallback<Boolean> callback) {
+    boolean isCallbackCalled = false;
     for(ModuleInfo s : getAllRegisteredModules()) {
       Log.i(TAG, "notify onUserTokenUpdate for : " + s.getModule().getName());
       s.getModule()
           .onUserTokenUpdate(
               null != userTokenRef.get() ? userTokenRef.get().getAccessToken() : null,
-              userIdRef.get(), Device.getCurrentDeviceId());
+              userIdRef.get(), Device.getCurrentDeviceId(), callback);
+      //FIXME : assume callback is called here
+      isCallbackCalled = true;
     }
+
+    return isCallbackCalled;
   }
 
   private static void notifyInvalidUserTokenObservers() {
     for(ModuleInfo s : getAllRegisteredModules()) {
       Log.i(TAG, "notify notifyInvalidUserToken for : " + s.getModule().getName());
-      s.getModule().onUserTokenInvalidate();
+      s.getModule().onUserTokenInvalidate(null);
     }
   }
 
@@ -472,7 +478,7 @@ import java.util.concurrent.atomic.AtomicReference;
           //    "-------------credentials reloaded from local userToken = " + userTokenRef.get()
           //        .getAccessToken());
 
-          notifyUserTokenObservers();
+          notifyUserTokenObservers(null);
         }
       }
     }

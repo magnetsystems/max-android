@@ -172,7 +172,7 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
     }
   }
 
-  @Override public void onAppTokenUpdate(String appToken, String appId, String deviceId) {
+  @Override public void onAppTokenUpdate(String appToken, String appId, String deviceId, ApiCallback<Boolean> callback) {
     Log.d(TAG, "MagnetRestAdapter : appToken updated : " + appToken);
 
     boolean isEmptyBeforeUpdate = null == appTokenRef.get();
@@ -185,7 +185,7 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
     }
   }
 
-  @Override public void onUserTokenUpdate(String userToken, String userId, String deviceId) {
+  @Override public void onUserTokenUpdate(String userToken, String userId, String deviceId, ApiCallback<Boolean> callback) {
     Log.d(TAG, "MagnetRestAdapter : userToken updated : " + userToken);
     userNameRef.set(userId);
     userTokenRef.set(userToken);
@@ -198,14 +198,14 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
 
   }
 
-  @Override public void onUserTokenInvalidate() {
+  @Override public void onUserTokenInvalidate(ApiCallback<Boolean> callback) {
     Log.d(TAG, "MagnetRestAdapter : userToken invalidated");
     userNameRef.set(null);
     userTokenRef.set(null);
     deviceIdRef.set(null);
   }
 
-  @Override public void deInitModule() {
+  @Override public void deInitModule(ApiCallback<Boolean> callback) {
     Log.d(TAG, "MagnetRestAdapter : module deInited");
   }
 

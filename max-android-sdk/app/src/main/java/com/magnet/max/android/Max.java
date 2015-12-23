@@ -19,6 +19,7 @@ import com.magnet.max.android.ApiCallback;
 import com.magnet.max.android.MaxCore;
 import com.magnet.max.android.MaxModule;
 import com.magnet.max.android.config.MaxAndroidConfig;
+import com.magnet.mmx.client.api.MMX;
 
 /**
  * This class is the entry point of Magnet Max Android SDK.
@@ -35,6 +36,8 @@ public class Max {
    */
   public static synchronized void init(Context context, MaxAndroidConfig config) {
     MaxCore.init(context, config);
+
+    MaxCore.register(MMX.getModule());
   }
 
   /**
@@ -42,8 +45,12 @@ public class Max {
    * @param module
    * @param callback
    */
+  @Deprecated
   public static void initModule(MaxModule module, ApiCallback<Boolean> callback) {
-    MaxCore.initModule(module, callback);
+    //MaxCore.initModule(module, callback);
+    if(null != callback) {
+      callback.success(true);
+    }
   }
 
   /**
@@ -51,8 +58,12 @@ public class Max {
    * @param module
    * @param callback
    */
+  @Deprecated
   public static void deInitModule(MaxModule module, ApiCallback<Boolean> callback) {
-    MaxCore.deInitModule(module, callback);
+    //MaxCore.deInitModule(module, callback);
+    if(null != callback) {
+      callback.success(true);
+    }
   }
 
   /**

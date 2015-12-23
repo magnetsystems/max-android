@@ -112,16 +112,20 @@ final public class User {
               sCurrentUserRef.set(userLoginResponse.getUser());
             }
 
+            boolean isCallbackCalled = false;
             if (null != userLoginResponse.getAccessToken()) {
-              ModuleManager.onUserLogin(userLoginResponse.getUser().getUserIdentifier(),
+              isCallbackCalled = ModuleManager.onUserLogin(userLoginResponse.getUser().getUserIdentifier(),
                   new UserToken(userLoginResponse.getExpiresIn(), userLoginResponse.getAccessToken(),
                       userLoginResponse.getRefreshToken(), userLoginResponse.getTokenType()),
-                  rememberMe);
+                  rememberMe, callback);
 
               result = true;
             }
 
-            ApiCallbackHelper.executeCallback(callback, Response.success(result));
+            //Only call callback when it's not called by modules
+            if(!isCallbackCalled) {
+              ApiCallbackHelper.executeCallback(callback, Response.success(result));
+            }
           }
 
           @Override public void onFailure(Throwable throwable) {

@@ -90,19 +90,9 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
   public void testMagnetServiceCreation() throws InterruptedException {
     MaxModule service = this;
 
-    final CountDownLatch initCallbackSignal = new CountDownLatch(1);
-    MaxCore.initModule(service, new ApiCallback<Boolean>() {
-      @Override public void success(Boolean aBoolean) {
-        initCallbackSignal.countDown();
-      }
-
-      @Override public void failure(ApiError error) {
-        initCallbackSignal.countDown();
-      }
-    });
+    MaxCore.register(service);
     assertEquals(this.getClass().getSimpleName(), service.getName());
-    initCallbackSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
-    assertEquals(0, initCallbackSignal.getCount());
+    onInitSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     assertEquals(0, onInitSignal.getCount());
 
     onAppTokenSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
@@ -288,26 +278,29 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
     onInitSignal.countDown();
   }
 
-  @Override public void onAppTokenUpdate(String s, String s1, String s2) {
+  @Override public void onAppTokenUpdate(String s, String s1, String s2, ApiCallback<Boolean> callback) {
     Log.i(TAG, "-----------onAppTokenUpdate called : " + s2);
     onAppTokenSignal.countDown();
   }
 
-  @Override public void onUserTokenUpdate(String s, String userId, String s2) {
+  @Override public void onUserTokenUpdate(String s, String userId, String s2, ApiCallback<Boolean> callback) {
     Log.i(TAG, "-----------onUserTokenUpdate called : " + s2);
     onUserTokenSignal.countDown();
+    if(null != callback) {
+      callback.success(true);
+    }
   }
 
   @Override public void onClose(boolean b) {
 
   }
 
-  @Override public void onUserTokenInvalidate() {
+  @Override public void onUserTokenInvalidate(ApiCallback<Boolean> callback) {
     Log.i(TAG, "-----------onUserTokenInvalidate called");
     onUserTokenInvalidSignal.countDown();
   }
 
-  @Override public void deInitModule() {
+  @Override public void deInitModule(ApiCallback<Boolean> callback) {
     Log.i(TAG, "-----------deInitModule called");
   }
 
