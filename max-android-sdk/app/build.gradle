@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'maven'
 
 archivesBaseName = 'magnet-max-android-sdk'
-version = "2.2-b-3"
+version = "2.2-b-4"
 group = "com.magnet.max.android"
 
 if (hasProperty('localMavenRepo')) {
@@ -61,11 +61,11 @@ dependencies {
   compile fileTree(dir: 'libs', include: ['*.jar'])
   testCompile 'junit:junit:4.12'
 
-  compile ('com.magnet.max.android:magnet-max-android-core:2.2-b-3') {
+  compile ('com.magnet.max.android:magnet-max-android-core:2.2-b-4') {
     transitive=true
   }
 
-  compile('com.magnet.mmx:magnet-mmx-client-android:2.2-b-3@aar') {
+  compile('com.magnet.mmx:magnet-mmx-client-android:2.2-b-4@aar') {
     transitive = true
   }
 }
