@@ -202,6 +202,15 @@ public class Device implements Parcelable {
         .hash(pushAuthority).hash(deviceStatus).hashCode();
   }
 
+  @Override public String toString() {
+    return new StringBuilder().append("deviceId = ").append(deviceId).append(", ")
+        .append("deviceToken = ").append(deviceToken).append(", ")
+        .append("os = ").append(os).append(", ")
+        .append("pushAuthority = ").append(pushAuthority).append(", ")
+        .append("deviceStatus = ").append(deviceStatus)
+        .toString();
+  }
+
   //----------------Parcelable Methods----------------
 
   @Override public int describeContents() {

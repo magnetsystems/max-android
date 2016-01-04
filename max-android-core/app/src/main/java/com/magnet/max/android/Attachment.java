@@ -594,6 +594,17 @@ final public class Attachment implements Parcelable {
         .hash(status).hash(length).hash(sourceType).hashCode();
   }
 
+  @Override public String toString() {
+    return new StringBuilder().append("attachmentId = ").append(attachmentId).append(", ")
+        .append("name = ").append(name).append(", ")
+        .append("status = ").append(status).append(", ")
+        .append("sourceType = ").append(sourceType).append(", ")
+        .append("mimeType = ").append(mimeType).append(", ")
+        .append("length = ").append(length).append(", ")
+        .append("metaData = ").append(StringUtil.toString(metaData))
+        .toString();
+  }
+
   protected AttachmentService getAttachmentService() {
     if(null == attachmentService) {
       attachmentService = MaxCore.create(AttachmentService.class);

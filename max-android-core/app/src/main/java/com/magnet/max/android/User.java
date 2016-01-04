@@ -409,6 +409,19 @@ final public class User implements Parcelable {
         (mUserRealm == theOther.getUserRealm());
   }
 
+  @Override public String toString() {
+    return new StringBuilder().append("userIdentifier = ").append(mUserIdentifier).append(", ")
+        .append("userName = ").append(mUserName).append(", ")
+        .append("firstName = ").append(mFirstName).append(", ")
+        .append("lastName = ").append(mLastName).append(", ")
+        .append("email = ").append(mEmail).append(", ")
+        .append("userRealm = ").append(mUserRealm).append(", ")
+        .append("roles = ").append(StringUtil.toString(mRoles)).append(", ")
+        .append("tags = ").append(StringUtil.toString(mTags)).append(", ")
+        .append("extras = ").append(StringUtil.toString(mExtras))
+        .toString();
+  }
+
   /**
    *  Returns an integer hash code for this object.
    *  @see #equals(Object) for the properties used for hash calculation.
