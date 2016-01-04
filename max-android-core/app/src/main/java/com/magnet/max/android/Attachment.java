@@ -18,9 +18,12 @@ package com.magnet.max.android;
 
 import android.content.Context;
 import android.os.AsyncTask;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.Log;
 import com.magnet.max.android.util.EqualityUtil;
 import com.magnet.max.android.util.HashCodeBuilder;
+import com.magnet.max.android.util.ParcelableHelper;
 import com.magnet.max.android.util.StringUtil;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.RequestBody;
@@ -45,7 +48,7 @@ import retrofit.http.POST;
 /**
  * Attachment is used to save/download large content (such as file) to/from Max server.
  */
-final public class Attachment {
+final public class Attachment implements Parcelable {
 
   /**
    * Status of the attachment
@@ -900,4 +903,57 @@ final public class Attachment {
       }).executeInBackground();
     }
   }
+
+  //----------------Parcelable Methods----------------
+
+  @Override public int describeContents() {
+    return 0;
+  }
+
+  @Override public void writeToParcel(Parcel dest, int flags) {
+    dest.writeInt(this.status == null ? -1 : this.status.ordinal());
+    dest.writeInt(this.sourceType == null ? -1 : this.sourceType.ordinal());
+    dest.writeString(this.name);
+    dest.writeString(this.summary);
+    dest.writeString(this.mimeType);
+    dest.writeLong(this.length);
+    dest.writeString(this.charsetName);
+    dest.writeByteArray(this.data);
+    dest.writeString(this.attachmentId);
+    dest.writeString(this.downloadUrl);
+    dest.writeString(this.senderId);
+    dest.writeBundle(ParcelableHelper.stringMapToBundle(this.metaData));
+  }
+
+  protected Attachment(Parcel in) {
+    int tmpStatus = in.readInt();
+    this.status = tmpStatus == -1 ? null : Status.values()[tmpStatus];
+    int tmpSourceType = in.readInt();
+    this.sourceType = tmpSourceType == -1 ? null : ContentSourceType.values()[tmpSourceType];
+    this.name = in.readString();
+    this.summary = in.readString();
+    this.mimeType = in.readString();
+    this.length = in.readLong();
+    this.charsetName = in.readString();
+    this.content = in.readParcelable(Object.class.getClassLoader());
+    this.data = in.createByteArray();
+    this.attachmentId = in.readString();
+    this.downloadUrl = in.readString();
+    this.senderId = in.readString();
+    this.metaData = ParcelableHelper.stringMapfromBundle(in.readBundle());
+  }
+
+  protected Attachment() {
+  }
+
+  public static final Parcelable.Creator<Attachment> CREATOR =
+      new Parcelable.Creator<Attachment>() {
+        public Attachment createFromParcel(Parcel source) {
+          return new Attachment(source);
+        }
+
+        public Attachment[] newArray(int size) {
+          return new Attachment[size];
+        }
+      };
 }

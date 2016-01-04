@@ -15,6 +15,8 @@
  */
 package com.magnet.max.android;
 
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.Log;
 import com.magnet.max.android.auth.model.DeviceInfo;
 import com.magnet.max.android.auth.model.DeviceStatus;
@@ -32,7 +34,7 @@ import retrofit.Response;
  * The Device class is a local representation of a device in the MagnetMax platform.
  * This class provides various device specific methods, like registering a the device with GCM registration id.
  */
-public class Device {
+public class Device implements Parcelable {
   private static final String TAG = "Device";
 
   private String[] tags;
@@ -199,4 +201,51 @@ public class Device {
     return new HashCodeBuilder().hash(deviceId).hash(deviceToken).hash(os)
         .hash(pushAuthority).hash(deviceStatus).hashCode();
   }
+
+  //----------------Parcelable Methods----------------
+
+  @Override public int describeContents() {
+    return 0;
+  }
+
+  @Override public void writeToParcel(Parcel dest, int flags) {
+    dest.writeStringArray(this.tags);
+    dest.writeInt(this.os == null ? -1 : this.os.ordinal());
+    dest.writeString(this.osVersion);
+    dest.writeString(this.deviceToken);
+    dest.writeString(this.userId);
+    dest.writeInt(this.deviceStatus == null ? -1 : this.deviceStatus.ordinal());
+    dest.writeString(this.label);
+    dest.writeInt(this.pushAuthority == null ? -1 : this.pushAuthority.ordinal());
+    dest.writeString(this.deviceId);
+  }
+
+  protected Device() {
+  }
+
+  protected Device(Parcel in) {
+    this.tags = in.createStringArray();
+    int tmpOs = in.readInt();
+    this.os = tmpOs == -1 ? null : OsType.values()[tmpOs];
+    this.osVersion = in.readString();
+    this.deviceToken = in.readString();
+    this.userId = in.readString();
+    int tmpDeviceStatus = in.readInt();
+    this.deviceStatus = tmpDeviceStatus == -1 ? null : DeviceStatus.values()[tmpDeviceStatus];
+    this.label = in.readString();
+    int tmpPushAuthority = in.readInt();
+    this.pushAuthority =
+        tmpPushAuthority == -1 ? null : PushAuthorityType.values()[tmpPushAuthority];
+    this.deviceId = in.readString();
+  }
+
+  public static final Parcelable.Creator<Device> CREATOR = new Parcelable.Creator<Device>() {
+    public Device createFromParcel(Parcel source) {
+      return new Device(source);
+    }
+
+    public Device[] newArray(int size) {
+      return new Device[size];
+    }
+  };
 }
