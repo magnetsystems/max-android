@@ -203,11 +203,13 @@ public class Device implements Parcelable {
   }
 
   @Override public String toString() {
-    return new StringBuilder().append("deviceId = ").append(deviceId).append(", ")
+    return new StringBuilder().append("{")
+        .append("deviceId = ").append(deviceId).append(", ")
         .append("deviceToken = ").append(deviceToken).append(", ")
         .append("os = ").append(os).append(", ")
         .append("pushAuthority = ").append(pushAuthority).append(", ")
         .append("deviceStatus = ").append(deviceStatus)
+        .append("}")
         .toString();
   }
 

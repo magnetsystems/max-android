@@ -595,13 +595,15 @@ final public class Attachment implements Parcelable {
   }
 
   @Override public String toString() {
-    return new StringBuilder().append("attachmentId = ").append(attachmentId).append(", ")
+    return new StringBuilder().append("{")
+        .append("attachmentId = ").append(attachmentId).append(", ")
         .append("name = ").append(name).append(", ")
         .append("status = ").append(status).append(", ")
         .append("sourceType = ").append(sourceType).append(", ")
         .append("mimeType = ").append(mimeType).append(", ")
         .append("length = ").append(length).append(", ")
         .append("metaData = ").append(StringUtil.toString(metaData))
+        .append("}")
         .toString();
   }
 

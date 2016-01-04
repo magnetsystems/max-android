@@ -16,7 +16,7 @@
 package com.magnet.max.android.util;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 
 public class StringUtil {
@@ -39,13 +39,13 @@ public class StringUtil {
     return toString(null != input ? Arrays.asList(input) : null);
   }
 
-  public static <T> String toString(List<T> input) {
+  public static <T> String toString(Collection<T> input) {
     StringBuilder sb = new StringBuilder("[");
     if(null != input && !input.isEmpty()) {
-      for(int i = 0; i < input.size(); i++) {
-        T e = input.get(i);
+      int i = 0;
+      for(T e : input) {
         sb.append(null != e ? e.toString() : "null");
-        if(i != input.size() - 1) {
+        if(i++ != input.size() - 1) {
           sb.append(", ");
         }
       }
