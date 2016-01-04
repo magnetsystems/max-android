@@ -18,8 +18,12 @@ package com.magnet.max.android.util;
 
 import android.os.Bundle;
 import android.os.Parcelable;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class ParcelableHelper {
   public static Bundle toBundle(Map<String, ? extends Parcelable> input) {
@@ -54,5 +58,19 @@ public class ParcelableHelper {
       output.put(key, input.getString(key));
     }
     return output;
+  }
+
+  public static <T extends Parcelable> T[] setToArray(Set<T> input) {
+    if(null == input || input.isEmpty()) {
+      return null;
+    }
+    return (T[]) input.toArray();
+  }
+
+  public static <T extends Parcelable> Set<T> arrayToSet(T[] input) {
+    if(null == input || input.length == 0) {
+      return null;
+    }
+    return new HashSet<>(Arrays.asList(input));
   }
 }

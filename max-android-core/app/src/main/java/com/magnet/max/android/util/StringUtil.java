@@ -15,6 +15,10 @@
  */
 package com.magnet.max.android.util;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+
 public class StringUtil {
   public static boolean isNotEmpty(String s) {
     return null != s && s.length() > 0;
@@ -29,5 +33,43 @@ public class StringUtil {
     } else {
       return s1.equals(s2);
     }
+  }
+
+  public static <T> String toString(T[] input) {
+    return toString(null != input ? Arrays.asList(input) : null);
+  }
+
+  public static <T> String toString(Collection<T> input) {
+    StringBuilder sb = new StringBuilder("[");
+    if(null != input && !input.isEmpty()) {
+      int i = 0;
+      for(T e : input) {
+        sb.append(null != e ? e.toString() : "null");
+        if(i++ != input.size() - 1) {
+          sb.append(", ");
+        }
+      }
+    }
+    sb.append("]");
+
+    return sb.toString();
+  }
+
+  public static <T> String toString(Map<String, T> input) {
+    StringBuilder sb = new StringBuilder("{");
+    int i = 0;
+    if(null != input && !input.isEmpty()) {
+      for(Map.Entry<String, T> e : input.entrySet()) {
+        sb.append(e.getKey()).append(" = ");
+        T v = e.getValue();
+        sb.append(null != v ? v.toString() : "null");
+        if(i++ != input.size() - 1) {
+          sb.append(", ");
+        }
+      }
+    }
+    sb.append("}");
+
+    return sb.toString();
   }
 }
