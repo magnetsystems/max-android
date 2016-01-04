@@ -15,6 +15,8 @@
  */
 package com.magnet.max.android;
 
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.Log;
 import com.google.gson.annotations.SerializedName;
 import com.magnet.max.android.auth.model.UpdateProfileRequest;
@@ -25,6 +27,7 @@ import com.magnet.max.android.auth.model.UserToken;
 import com.magnet.max.android.util.AuthUtil;
 import com.magnet.max.android.util.EqualityUtil;
 import com.magnet.max.android.util.HashCodeBuilder;
+import com.magnet.max.android.util.ParcelableHelper;
 import com.magnet.max.android.util.StringUtil;
 import java.util.Collections;
 import java.util.List;
@@ -38,7 +41,7 @@ import retrofit.Response;
  * The User class is a local representation of a user in the MagnetMax platform.
  * This class provides various user specific methods, like authentication, signing up, and search.
  */
-final public class User {
+final public class User implements Parcelable {
   private static final String TAG = "User";
 
   @SerializedName("userIdentifier")
@@ -416,4 +419,48 @@ final public class User {
     return new HashCodeBuilder().hash(mUserIdentifier).hash(mEmail).hash(mUserName)
         .hash(mFirstName).hash(mLastName).hash(mUserRealm).hashCode();
   }
+
+  //----------------Parcelable Methods----------------
+
+  @Override public int describeContents() {
+    return 0;
+  }
+
+  @Override public void writeToParcel(Parcel dest, int flags) {
+    dest.writeString(this.mUserIdentifier);
+    dest.writeString(this.mEmail);
+    dest.writeStringArray(this.mRoles);
+    dest.writeString(this.mUserName);
+    dest.writeInt(this.mUserRealm == null ? -1 : this.mUserRealm.ordinal());
+    dest.writeString(this.mFirstName);
+    dest.writeString(this.mLastName);
+    dest.writeStringArray(this.mTags);
+    dest.writeBundle(ParcelableHelper.stringMapToBundle(this.mExtras));
+  }
+
+  protected User() {
+  }
+
+  protected User(Parcel in) {
+    this.mUserIdentifier = in.readString();
+    this.mEmail = in.readString();
+    this.mRoles = in.createStringArray();
+    this.mUserName = in.readString();
+    int tmpMUserRealm = in.readInt();
+    this.mUserRealm = tmpMUserRealm == -1 ? null : UserRealm.values()[tmpMUserRealm];
+    this.mFirstName = in.readString();
+    this.mLastName = in.readString();
+    this.mTags = in.createStringArray();
+    this.mExtras = ParcelableHelper.stringMapfromBundle(in.readBundle());
+  }
+
+  public static final Parcelable.Creator<User> CREATOR = new Parcelable.Creator<User>() {
+    public User createFromParcel(Parcel source) {
+      return new User(source);
+    }
+
+    public User[] newArray(int size) {
+      return new User[size];
+    }
+  };
 }
