@@ -28,14 +28,16 @@ import com.magnet.max.android.util.SecurePreferences;
 import com.magnet.max.android.util.StringUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**public**/ class ModuleManager {
   private static final String TAG = ModuleManager.class.getSimpleName();
 
-  private static Map<String, List<ModuleInfo>> registeredModules = new HashMap<>();
+  private static Map<String, Set<ModuleInfo>> registeredModules = new HashMap<>();
 
   private static AtomicReference<ApplicationToken> appTokenRef = new AtomicReference<ApplicationToken>(null);
   private static AtomicReference<UserToken> userTokenRef = new AtomicReference<UserToken>(null);
@@ -70,7 +72,7 @@ import java.util.concurrent.atomic.AtomicReference;
     //}
 
     if(null == registeredModules) {
-      registeredModules = new HashMap<String, List<ModuleInfo>>();
+      registeredModules = new HashMap<>();
     } else {
       registeredModules.clear();
     }
@@ -90,17 +92,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
     Log.d(TAG, "--------register module " + module.getName() + " : " + module);
 
-    List<ModuleInfo> existingModules = registeredModules.get(module.getName());
+    Set<ModuleInfo> existingModules = registeredModules.get(module.getName());
     ModuleInfo moduleInfo = new ModuleInfo(module, callback);
     if(null != existingModules) {
-      int index = findModule(existingModules, module);
-      if(index == -1) {
+      if(!existingModules.contains(module)) {
         existingModules.add(moduleInfo);
       } else {
         Log.w(TAG, "MaxModule " + module + " has been registered");
       }
     } else {
-      ArrayList<ModuleInfo> moduleInfos = new ArrayList<>();
+      Set<ModuleInfo> moduleInfos = new HashSet<>();
       moduleInfos.add(moduleInfo);
       registeredModules.put(module.getName(), moduleInfos);
     }
@@ -125,10 +126,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
     Log.d(TAG, "--------deRegister module " + module.getName() + " : " + module);
 
-    List<ModuleInfo> existingModules = registeredModules.get(module.getName());
-    int existingIndex = findModule(existingModules, module);
-    if(existingIndex >= 0) {
-      existingModules.remove(existingIndex);
+    Set<ModuleInfo> existingModules = registeredModules.get(module.getName());
+    if(null != existingModules && existingModules.contains(module)) {
+      existingModules.remove(module);
       module.deInitModule(null);
       Log.d(TAG, "deinit and remove module " + module.getName());
 
@@ -285,8 +285,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
   private static List<ModuleInfo> getAllRegisteredModules() {
     List<ModuleInfo> result = new ArrayList<>();
-    for(Map.Entry<String, List<ModuleInfo>> e : registeredModules.entrySet()) {
-      List<ModuleInfo> services = e.getValue();
+    for(Map.Entry<String, Set<ModuleInfo>> e : registeredModules.entrySet()) {
+      Set<ModuleInfo> services = e.getValue();
       if(null != services) {
         result.addAll(services);
       }
@@ -484,15 +484,4 @@ import java.util.concurrent.atomic.AtomicReference;
     }
   }
 
-  private static int findModule(List<ModuleInfo> existingModules, MaxModule module) {
-    if(null != existingModules) {
-      for (int i = 0; i < existingModules.size(); i++) {
-        if (existingModules.get(i).getModule() == module) {
-          return i;
-        }
-      }
-    }
-
-    return -1;
-  }
 }
