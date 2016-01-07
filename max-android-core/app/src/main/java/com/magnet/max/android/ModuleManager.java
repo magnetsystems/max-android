@@ -382,7 +382,7 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     @Override public String toString() {
-      return new StringBuilder().append("{ module = ").append(module).append(", callback = ").append(callback).toString();
+      return new StringBuilder().append("{ module = ").append(module).append(", callback = ").append(callback).append("}").toString();
     }
   }
 
