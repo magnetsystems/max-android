@@ -58,11 +58,8 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     if(null == serverConfigsRef.get()) {
-      serverConfigsRef.set(new HashMap<String, String>());
+      serverConfigsRef.set(MaxCore.getConfig().getAllConfigs());
     } else {
-      serverConfigsRef.get().clear();
-    }
-    if(null != MaxCore.getConfig().getAllConfigs()) {
       serverConfigsRef.get().putAll(MaxCore.getConfig().getAllConfigs());
     }
 
@@ -114,6 +111,7 @@ import java.util.concurrent.atomic.AtomicReference;
     if(registered) {
       if (appTokenRef.get() != null) {
         Log.d(TAG, "--------appToken is availabe when register : " + appTokenRef.get());
+        Log.d(TAG, "--------configs is availabe when register : " + Arrays.toString(serverConfigsRef.get().entrySet().toArray()));
         module.onInit(MaxCore.getApplicationContext(), serverConfigsRef.get(), callback);
         module.onAppTokenUpdate(appTokenRef.get().getAccessToken(), appTokenRef.get().getMmxAppId(),
             Device.getCurrentDeviceId(), callback);
