@@ -380,6 +380,10 @@ import java.util.concurrent.atomic.AtomicReference;
     public ApiCallback getCallback() {
       return callback;
     }
+
+    @Override public String toString() {
+      return new StringBuilder().append("{ module = ").append(module).append(", callback = ").append(callback).toString();
+    }
   }
 
   private final static class TokenLocalStore {
