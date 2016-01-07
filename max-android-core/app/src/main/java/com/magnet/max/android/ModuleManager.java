@@ -27,6 +27,7 @@ import com.magnet.max.android.auth.model.UserToken;
 import com.magnet.max.android.util.SecurePreferences;
 import com.magnet.max.android.util.StringUtil;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -92,6 +93,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     Log.d(TAG, "--------register module " + module.getName() + " : " + module);
 
+    boolean registered = true;
     Set<ModuleInfo> existingModules = registeredModules.get(module.getName());
     ModuleInfo moduleInfo = new ModuleInfo(module, callback);
     if(null != existingModules) {
@@ -99,6 +101,7 @@ import java.util.concurrent.atomic.AtomicReference;
         existingModules.add(moduleInfo);
       } else {
         Log.w(TAG, "MaxModule " + module + " has been registered");
+        registered = false;
       }
     } else {
       Set<ModuleInfo> moduleInfos = new HashSet<>();
@@ -106,16 +109,17 @@ import java.util.concurrent.atomic.AtomicReference;
       registeredModules.put(module.getName(), moduleInfos);
     }
 
-    if(appTokenRef.get() != null) {
-      Log.d(TAG, "--------appToken is availabe when register : " + appTokenRef.get());
-      module.onInit(MaxCore.getApplicationContext(), serverConfigsRef.get(), callback);
-      module.onAppTokenUpdate(appTokenRef.get().getAccessToken(), appTokenRef.get().getMmxAppId(),
-          Device.getCurrentDeviceId(), callback);
-    }
-    if(userTokenRef.get() != null) {
-      Log.d(TAG, "--------userToken is availabe when register : " + userTokenRef.get());
-      module.onUserTokenUpdate(userTokenRef.get().getAccessToken(), userIdRef.get(),
-          Device.getCurrentDeviceId(), callback);
+    if(registered) {
+      if (appTokenRef.get() != null) {
+        Log.d(TAG, "--------appToken is availabe when register : " + appTokenRef.get());
+        module.onInit(MaxCore.getApplicationContext(), serverConfigsRef.get(), callback);
+        module.onAppTokenUpdate(appTokenRef.get().getAccessToken(), appTokenRef.get().getMmxAppId(),
+            Device.getCurrentDeviceId(), callback);
+      }
+      if (userTokenRef.get() != null) {
+        Log.d(TAG, "--------userToken is availabe when register : " + userTokenRef.get());
+        module.onUserTokenUpdate(userTokenRef.get().getAccessToken(), userIdRef.get(), Device.getCurrentDeviceId(), callback);
+      }
     }
   }
 
@@ -292,19 +296,21 @@ import java.util.concurrent.atomic.AtomicReference;
       }
     }
 
+    Log.d(TAG, "Registered modules : " + Arrays.toString(result.toArray()));
+
     return result;
   }
 
   private static void notifyConfigObservers() {
     for(ModuleInfo s : getAllRegisteredModules()) {
-      Log.i(TAG, "notify onConfig for : " + s.getModule().getName());
+      Log.i(TAG, "notify onConfig for : " + s.getModule());
       s.getModule().onInit(MaxCore.getApplicationContext(), serverConfigsRef.get(), s.getCallback());
     }
   }
 
   private static void notifyAppTokenObservers() {
     for(ModuleInfo s : getAllRegisteredModules()) {
-      Log.i(TAG, "notify onAppTokenUpdate for : " + s.getModule().getName());
+      Log.i(TAG, "notify onAppTokenUpdate for : " + s.getModule());
       s.getModule().onAppTokenUpdate(
           null != appTokenRef.get() ? appTokenRef.get().getAccessToken() : null,
           MaxCore.getConfig().getClientId(), Device.getCurrentDeviceId(), null);
@@ -314,7 +320,7 @@ import java.util.concurrent.atomic.AtomicReference;
   private static boolean notifyUserTokenObservers(ApiCallback<Boolean> callback) {
     boolean isCallbackCalled = false;
     for(ModuleInfo s : getAllRegisteredModules()) {
-      Log.i(TAG, "notify onUserTokenUpdate for : " + s.getModule().getName());
+      Log.i(TAG, "notify onUserTokenUpdate for : " + s.getModule());
       s.getModule()
           .onUserTokenUpdate(
               null != userTokenRef.get() ? userTokenRef.get().getAccessToken() : null,
