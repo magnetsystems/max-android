@@ -123,10 +123,10 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
   private final RequestManager requestManager;
   private final RequestInterceptor requestInterceptor;
 
-  private AtomicReference<String> appTokenRef = new AtomicReference<String>(null);
-  private AtomicReference<String> userTokenRef = new AtomicReference<String>(null);
-  private AtomicReference<String> userNameRef = new AtomicReference<String>(null);
-  private AtomicReference<String> deviceIdRef = new AtomicReference<String>(null);
+  private volatile AtomicReference<String> appTokenRef = new AtomicReference<String>(null);
+  private volatile AtomicReference<String> userTokenRef = new AtomicReference<String>(null);
+  private volatile AtomicReference<String> userNameRef = new AtomicReference<String>(null);
+  private volatile AtomicReference<String> deviceIdRef = new AtomicReference<String>(null);
 
   private Context applicationContext;
   private boolean isAuthRequired = false;

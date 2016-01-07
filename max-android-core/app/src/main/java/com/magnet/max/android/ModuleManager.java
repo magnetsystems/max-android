@@ -42,10 +42,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
   private static Map<String, Set<ModuleInfo>> registeredModules = new HashMap<>();
 
-  private static AtomicReference<ApplicationToken> appTokenRef = new AtomicReference<ApplicationToken>(null);
-  private static AtomicReference<UserToken> userTokenRef = new AtomicReference<UserToken>(null);
-  private static AtomicReference<String> userIdRef = new AtomicReference<String>(null);
-  private static AtomicReference<Map<String, String>> serverConfigsRef = new AtomicReference<>(null);
+  private volatile static AtomicReference<ApplicationToken> appTokenRef = new AtomicReference<ApplicationToken>(null);
+  private volatile static AtomicReference<UserToken> userTokenRef = new AtomicReference<UserToken>(null);
+  private volatile static AtomicReference<String> userIdRef = new AtomicReference<String>(null);
+  private volatile static AtomicReference<Map<String, String>> serverConfigsRef = new AtomicReference<>(null);
 
   private static TokenLocalStore tokenLocalStore;
 
