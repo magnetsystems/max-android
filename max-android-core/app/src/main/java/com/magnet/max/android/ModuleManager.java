@@ -24,6 +24,8 @@ import com.google.gson.reflect.TypeToken;
 import com.magnet.max.android.auth.model.ApplicationToken;
 import com.magnet.max.android.auth.model.DeviceInfo;
 import com.magnet.max.android.auth.model.UserToken;
+import com.magnet.max.android.util.EqualityUtil;
+import com.magnet.max.android.util.HashCodeBuilder;
 import com.magnet.max.android.util.SecurePreferences;
 import com.magnet.max.android.util.StringUtil;
 import java.util.ArrayList;
@@ -383,6 +385,19 @@ import java.util.concurrent.atomic.AtomicReference;
 
     @Override public String toString() {
       return new StringBuilder().append("{ module = ").append(module).append(", callback = ").append(callback).append("}").toString();
+    }
+
+    @Override public boolean equals(Object obj) {
+      if(!EqualityUtil.quickCheck(this, obj)) {
+        return false;
+      }
+
+      ModuleInfo theOther = (ModuleInfo) obj;
+      return module.equals(theOther.getModule());
+    }
+
+    @Override public int hashCode() {
+      return new HashCodeBuilder().hash(module).hashCode();
     }
   }
 
