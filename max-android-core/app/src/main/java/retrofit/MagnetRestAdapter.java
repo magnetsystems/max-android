@@ -123,10 +123,11 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
   private final RequestManager requestManager;
   private final RequestInterceptor requestInterceptor;
 
-  private volatile AtomicReference<String> appTokenRef = new AtomicReference<String>(null);
-  private volatile AtomicReference<String> userTokenRef = new AtomicReference<String>(null);
-  private volatile AtomicReference<String> userNameRef = new AtomicReference<String>(null);
-  private volatile AtomicReference<String> deviceIdRef = new AtomicReference<String>(null);
+  //FIXME : added static to ensure value change seen from other thread
+  private static volatile AtomicReference<String> mAppToken = new AtomicReference<>();
+  private static volatile AtomicReference<String> mUserToken = new AtomicReference<>();
+  private static volatile AtomicReference<String> mUserId = new AtomicReference<>();
+  private static volatile AtomicReference<String> mDeviceId = new AtomicReference<>();
 
   private Context applicationContext;
   private boolean isAuthRequired = false;
@@ -173,23 +174,24 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
   }
 
   @Override public void onAppTokenUpdate(String appToken, String appId, String deviceId, ApiCallback<Boolean> callback) {
-    Log.d(TAG, "MagnetRestAdapter : appToken updated : " + appToken);
+    boolean isEmptyBeforeUpdate = null == mAppToken;
 
-    boolean isEmptyBeforeUpdate = null == appTokenRef.get();
-
-    appTokenRef.set(appToken);
-    deviceIdRef.set(deviceId);
+    mAppToken.set(appToken);
+    mDeviceId.set(deviceId);
 
     if(isEmptyBeforeUpdate) {
       requestManager.resendPendingCallsForToken();
     }
+
+    Log.d(TAG, "MagnetRestAdapter : appToken updated : " + mAppToken);
   }
 
   @Override public void onUserTokenUpdate(String userToken, String userId, String deviceId, ApiCallback<Boolean> callback) {
-    Log.d(TAG, "MagnetRestAdapter : userToken updated : " + userToken);
-    userNameRef.set(userId);
-    userTokenRef.set(userToken);
-    deviceIdRef.set(deviceId);
+    mUserId.set(userId);
+    mUserToken.set(userToken);
+    mDeviceId.set(deviceId);
+
+    Log.d(TAG, "MagnetRestAdapter : userToken updated : " + mUserToken + " from thread " + Thread.currentThread().getId());
 
     //requestManager.resendPendingCallsForToken();
   }
@@ -199,10 +201,10 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
   }
 
   @Override public void onUserTokenInvalidate(ApiCallback<Boolean> callback) {
-    Log.d(TAG, "MagnetRestAdapter : userToken invalidated");
-    userNameRef.set(null);
-    userTokenRef.set(null);
-    deviceIdRef.set(null);
+    Log.d(TAG, "MagnetRestAdapter : userToken invalidated "  + " from thread " + Thread.currentThread().getId());
+    mUserId.set(null);
+    mUserToken.set(null);
+    mDeviceId.set(null);
   }
 
   @Override public void deInitModule(ApiCallback<Boolean> callback) {
@@ -287,11 +289,13 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
   }
 
   @Override public String getAppToken() {
-    return appTokenRef.get();
+    //Log.d(TAG, "appToken is " + mAppToken.get()  + " from thread " + Thread.currentThread().getId());
+    return mAppToken.get();
   }
 
   @Override public String getUserToken() {
-    return userTokenRef.get();
+    //Log.d(TAG, "userToken is " + mUserToken.get()  + " from thread " + Thread.currentThread().getId());
+    return mUserToken.get();
   }
 
   /**
