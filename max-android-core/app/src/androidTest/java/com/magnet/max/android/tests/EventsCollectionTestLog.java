@@ -17,6 +17,7 @@ package com.magnet.max.android.tests;
 
 import android.test.AndroidTestCase;
 import android.test.suitebuilder.annotation.MediumTest;
+import android.util.Log;
 import com.google.gson.Gson;
 import com.magnet.max.android.MaxCore;
 import com.magnet.max.android.config.MaxAndroidConfig;
@@ -30,10 +31,6 @@ import java.util.concurrent.TimeUnit;
 
 public class EventsCollectionTestLog extends AndroidTestCase {
   private static final String TAG = EventsCollectionTestLog.class.getSimpleName();
-
-  //GenyMotion
-  private static final String SERVER_PORT = "10.0.3.2:8443";
-  //private static final String SERVER_PORT = "192.168.101.135:8443";
 
   @Override
   protected void setUp() throws Exception {
@@ -128,9 +125,10 @@ public class EventsCollectionTestLog extends AndroidTestCase {
     }).executeInBackground();
 
     try {
-      signal.await(5, TimeUnit.SECONDS);
+      signal.await(10, TimeUnit.SECONDS);
     } catch (Throwable e) {
-      e.printStackTrace();
+      Log.e(TAG, "addEventsFromFile timeout");
+      fail("addEventsFromFile timeout");
     }
 
     assertEquals(0, signal.getCount());
