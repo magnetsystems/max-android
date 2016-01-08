@@ -174,7 +174,7 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
   }
 
   @Override public void onAppTokenUpdate(String appToken, String appId, String deviceId, ApiCallback<Boolean> callback) {
-    boolean isEmptyBeforeUpdate = null == mAppToken;
+    boolean isEmptyBeforeUpdate = null == mAppToken.get();
 
     mAppToken.set(appToken);
     mDeviceId.set(deviceId);

@@ -32,34 +32,16 @@ import java.util.concurrent.TimeUnit;
 public class EventsCollectionTestLog extends AndroidTestCase {
   private static final String TAG = EventsCollectionTestLog.class.getSimpleName();
 
+  private static boolean isMaxInited = false;
+
   @Override
   protected void setUp() throws Exception {
-    super.setUp();
+    if(!isMaxInited) {
+      MaxAndroidConfig config = new MaxAndroidJsonConfig(getContext(), R.raw.keys);
+      MaxCore.init(getContext(), config);
 
-    //MagnetAndroidConfig config = new MagnetAndroidConfig() {
-    //  @Override public String getBaseUrl() {
-    //    return "http://10.0.3.2:8443";
-    //  }
-    //
-    //  @Override public String getClientId() {
-    //    return "73728e03-c3ee-457a-a06a-4e59c765eedd";
-    //  }
-    //
-    //  @Override public String getClientSecret() {
-    //    return "Wu0vLi0YzkurLj8mVng7S2f8kJXSaC3Z5En8J6M3kM8";
-    //  }
-    //
-    //  @Override public String getScope() {
-    //    return null;
-    //  }
-    //
-    //  @Override public Map<String, String> getAllConfigs() {
-    //    return null;
-    //  }
-    //};
-
-    MaxAndroidConfig config = new MaxAndroidJsonConfig(getContext(), R.raw.keys);
-    MaxCore.init(getContext(), config);
+      isMaxInited = true;
+    }
   }
 
   //@MediumTest
