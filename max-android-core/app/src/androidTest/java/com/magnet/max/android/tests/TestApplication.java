@@ -27,7 +27,11 @@ public class TestApplication extends Application {
   public void onCreate() {
     super.onCreate();
 
-    MaxCore.init(getApplicationContext(), new MaxAndroidJsonConfig(this, R.raw.keys));
+    try {
+      MaxCore.init(getApplicationContext(), new MaxAndroidJsonConfig(this, R.raw.keys));
+    } catch (IllegalStateException e) {
+
+    }
   }
 
   @Override

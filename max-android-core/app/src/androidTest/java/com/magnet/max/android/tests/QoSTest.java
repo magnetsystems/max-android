@@ -24,6 +24,7 @@ import com.magnet.max.android.rest.CacheOptions;
 import com.magnet.max.android.tests.testsubjects.PrimitiveTypeService;
 import com.magnet.max.android.tests.testsubjects.model.ModelWithAllTypes;
 import com.magnet.max.android.tests.utils.MaxAndroidJsonConfig;
+import com.magnet.max.android.tests.utils.MaxHelper;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import retrofit.MagnetCall;
@@ -147,8 +148,7 @@ public class QoSTest extends ApplicationTestCase<TestApplication> {
         fail(e.getMessage());
       }
 
-      MaxCore.init(getContext().getApplicationContext(), new MaxAndroidJsonConfig(getContext(),
-          R.raw.keys));
+      MaxHelper.initMax(getContext(), R.raw.keys);
       //magnetServiceHttpAdapter = new MagnetRestAdapter.Builder().baseUrl("http://" + SERVER_PORT).build();
       myService = MaxCore.create(PrimitiveTypeService.class);
     }

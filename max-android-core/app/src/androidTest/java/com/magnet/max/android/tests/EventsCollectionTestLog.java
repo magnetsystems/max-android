@@ -24,6 +24,7 @@ import com.magnet.max.android.config.MaxAndroidConfig;
 import com.magnet.max.android.logging.EventLog;
 import com.magnet.max.android.logging.remote.LogEventsCollectionService;
 import com.magnet.max.android.tests.utils.MaxAndroidJsonConfig;
+import com.magnet.max.android.tests.utils.MaxHelper;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.RequestBody;
 import java.util.concurrent.CountDownLatch;
@@ -37,9 +38,7 @@ public class EventsCollectionTestLog extends AndroidTestCase {
   @Override
   protected void setUp() throws Exception {
     if(!isMaxInited) {
-      MaxAndroidConfig config = new MaxAndroidJsonConfig(getContext(), R.raw.keys);
-      MaxCore.init(getContext(), config);
-
+      MaxHelper.initMax(getContext(), R.raw.keys);
       isMaxInited = true;
     }
   }
