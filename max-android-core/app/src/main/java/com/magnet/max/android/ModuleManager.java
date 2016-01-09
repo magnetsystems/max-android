@@ -90,7 +90,7 @@ import java.util.concurrent.atomic.AtomicReference;
       throw new IllegalArgumentException("module shouldn't be null");
     }
 
-    Log.d(TAG, "--------register module " + module.getName() + " : " + module);
+    Log.d(TAG, "--------registering module " + module.getName() + " : " + module + "\n" + getAllRegisteredModules());
 
     boolean registered = true;
     Set<ModuleInfo> existingModules = registeredModules.get(module.getName());
