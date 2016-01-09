@@ -29,6 +29,7 @@ import com.magnet.max.android.logging.Logger;
 
 import com.magnet.max.android.tests.utils.MaxAndroidJsonConfig;
 
+import com.magnet.max.android.tests.utils.MaxHelper;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -49,7 +50,8 @@ public class LoggingTest extends AndroidTestCase {
 
      public void setUp() throws Exception {
          super.setUp();
-         MaxCore.init(getContext(), new MaxAndroidJsonConfig(getContext(), com.magnet.max.android.tests.R.raw.keys));
+
+         MaxHelper.initMax(getContext(), com.magnet.max.android.tests.R.raw.keys);
 
         testContext = getContext().getApplicationContext();
         loggerOptions = new DefaultLoggerOptions();

@@ -36,6 +36,7 @@ import com.magnet.max.android.auth.model.UserRegistrationInfo;
 import com.magnet.max.android.config.MaxAndroidConfig;
 import com.magnet.max.android.tests.R;
 import com.magnet.max.android.tests.utils.MaxAndroidJsonConfig;
+import com.magnet.max.android.tests.utils.MaxHelper;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -59,9 +60,7 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
   protected void setUp() throws Exception {
     super.setUp();
 
-    MaxAndroidConfig config = new MaxAndroidJsonConfig(getContext(), R.raw.keys);
-    //magnetServiceHttpAdapter = new MagnetServiceAdapter.Builder().config(config).applicationContext(getContext()).build();
-    MaxCore.init(getContext(), config);
+    MaxHelper.initMax(getContext(), R.raw.keys);
 
     appTokenBroadcastReceiver = new BroadcastReceiver() {
       @Override public void onReceive(Context context, Intent intent) {
