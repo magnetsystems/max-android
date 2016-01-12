@@ -57,7 +57,7 @@ public class MMRole {
   * Builder for MMRole
   **/
   public static class MMRoleBuilder {
-    private MMRole toBuild = new MMRole();
+    private final MMRole toBuild = new MMRole();
 
     public MMRoleBuilder() {
     }

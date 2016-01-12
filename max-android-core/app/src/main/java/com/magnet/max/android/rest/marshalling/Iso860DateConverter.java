@@ -23,7 +23,7 @@ import java.util.Locale;
 
 public class Iso860DateConverter {
   public static final String ISO8601DateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-  private static SimpleDateFormat dateFormat = new SimpleDateFormat(ISO8601DateFormat, Locale.US);
+  private static final SimpleDateFormat dateFormat = new SimpleDateFormat(ISO8601DateFormat, Locale.US);
 
   public static String toString(Date date) {
     return dateFormat.format(date);

@@ -65,7 +65,7 @@ public class UpdateProfileRequest {
    * Builder to build a {@link UpdateProfileRequest}
    **/
   public static class Builder {
-    private UpdateProfileRequest toBuild = new UpdateProfileRequest();
+    private final UpdateProfileRequest toBuild = new UpdateProfileRequest();
 
     public Builder() {
     }

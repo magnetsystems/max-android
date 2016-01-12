@@ -23,13 +23,13 @@ import java.util.Map;
 public class AppLoginResponse {
 
   @SerializedName("expires_in")
-  protected Long expiresIn;
+  private Long expiresIn;
 
   @SerializedName("access_token")
-  protected String accessToken;
+  private String accessToken;
 
   @SerializedName("token_type")
-  protected String tokenType;
+  private String tokenType;
 
   @SerializedName("mmx_app_id")
   private String mmxAppId;

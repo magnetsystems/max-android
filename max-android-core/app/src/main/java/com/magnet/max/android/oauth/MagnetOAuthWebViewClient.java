@@ -50,9 +50,9 @@ public class MagnetOAuthWebViewClient extends WebViewClient {
   private static final String CLOSE_REDIRECT_URL = "http://close";
 
   private boolean mIsCompleted;
-  private Activity mActivity;
-  private Uri mUri;
-  private WebView mWebView;
+  private final Activity mActivity;
+  private final Uri mUri;
+  private final WebView mWebView;
 
   /**
    * @param activity the activity containing the WebView
@@ -111,10 +111,8 @@ public class MagnetOAuthWebViewClient extends WebViewClient {
   private boolean isLocalRedirectUrl(URL url) {
     //if this the redirect_uri pulled from the initial url matches this one
     String query = url.getQuery();
-    if(StringUtil.isNotEmpty(query) && query.contains(OauthConstants.OAUTH_REDIRECT_URI_PARAMETER)) {
-      return true;
-    }
-    return false;
+    return StringUtil.isNotEmpty(query) && query.contains(
+        OauthConstants.OAUTH_REDIRECT_URI_PARAMETER);
   }
 
   private String buildLocalRedirectUrlWithClose(String url, String sessionId) {

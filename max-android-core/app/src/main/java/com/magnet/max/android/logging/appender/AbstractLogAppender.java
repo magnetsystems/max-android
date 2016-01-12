@@ -22,8 +22,8 @@ import java.lang.ref.WeakReference;
 import java.util.List;
 
 public abstract class AbstractLogAppender implements LogAppender {
-  protected WeakReference<Context> contextWeakReference;
-  protected WeakReference<LoggerOptions> loggerOptionsWeakReference;
+  protected final WeakReference<Context> contextWeakReference;
+  protected final WeakReference<LoggerOptions> loggerOptionsWeakReference;
 
   public  AbstractLogAppender(Context context,LoggerOptions loggerOptions) {
     contextWeakReference = new WeakReference<Context>(context.getApplicationContext());

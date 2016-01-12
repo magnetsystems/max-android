@@ -36,9 +36,9 @@ import retrofit.Response;
 /**public**/ class MagnetServiceAdapter {
   private static final String TAG = MagnetServiceAdapter.class.getSimpleName();
 
-  private MaxAndroidConfig config;
-  private MagnetRestAdapter restAdapter;
-  private Context applicationContext;
+  private final MaxAndroidConfig config;
+  private final MagnetRestAdapter restAdapter;
+  private final Context applicationContext;
   private Map<String, String> configMap;
 
   // builit-in services

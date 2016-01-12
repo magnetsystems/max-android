@@ -23,10 +23,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ConnectivityManager {
-  public static int TYPE_UNKNOWN = -1;
-  public static int TYPE_NOT_CONNECTED = 0;
-  public static int TYPE_WIFI = 1;
-  public static int TYPE_MOBILE = 2;
+  public static final int TYPE_UNKNOWN = -1;
+  public static final int TYPE_NOT_CONNECTED = 0;
+  public static final int TYPE_WIFI = 1;
+  public static final int TYPE_MOBILE = 2;
 
   private volatile int lastKnownStatus;
 

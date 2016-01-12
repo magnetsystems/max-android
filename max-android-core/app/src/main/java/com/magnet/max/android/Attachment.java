@@ -132,7 +132,7 @@ final public class Attachment implements Parcelable {
 
   /**
    * Download the content of attachment as {@link InputStream}
-   * The stream should be read in a backgroud thread
+   * The stream should be read in a background thread
    */
   public static abstract class DownloadAsStreamListener extends AbstractDownloadListener<InputStream> {
   }
@@ -162,7 +162,7 @@ final public class Attachment implements Parcelable {
   protected transient Object content;
 
   protected transient byte[] data;
-  /** The id to retrieve the attachement from server */
+  /** The id to retrieve the attachment from server */
   protected String attachmentId;
 
   protected transient String downloadUrl;
@@ -404,7 +404,7 @@ final public class Attachment implements Parcelable {
   public void upload(final UploadListener listener) {
     if(StringUtil.isNotEmpty(attachmentId)) {
       // Already uploaded
-      Log.d(TAG, "Aready uploaded");
+      Log.d(TAG, "Already uploaded");
       if(null != listener) {
         listener.onComplete(this);
       }
@@ -717,7 +717,7 @@ final public class Attachment implements Parcelable {
       startTime = System.currentTimeMillis();
 
       if (currentStatus == Status.COMPLETE) {
-        //TODO : content is not cached right now, alway re-download
+        //TODO : content is not cached right now, always re-download
         //// Already downloaded
         //if (null != listener) {
         //  listener.onComplete(this);
@@ -953,7 +953,7 @@ final public class Attachment implements Parcelable {
     this.attachmentId = in.readString();
     this.downloadUrl = in.readString();
     this.senderId = in.readString();
-    this.metaData = ParcelableHelper.stringMapfromBundle(in.readBundle());
+    this.metaData = ParcelableHelper.stringMapfromBundle(in.readBundle(getClass().getClassLoader()));
   }
 
   protected Attachment() {

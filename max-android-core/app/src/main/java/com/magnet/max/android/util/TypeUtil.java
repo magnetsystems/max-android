@@ -64,10 +64,7 @@ public class TypeUtil {
    * @since 3.1
    */
   public static boolean isPrimitiveOrWrapper(final Class<?> type) {
-    if (type == null) {
-      return false;
-    }
-    return type.isPrimitive() || isPrimitiveWrapper(type);
+    return type != null && (type.isPrimitive() || isPrimitiveWrapper(type));
   }
 
   /**

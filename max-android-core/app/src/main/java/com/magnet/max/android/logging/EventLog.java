@@ -98,7 +98,7 @@ public class EventLog extends LogEntry {
   * Builder for LogEvent
   **/
   private static abstract class LogEventBuilder<T extends LogEventBuilder> {
-    protected EventLog toBuild = new EventLog();
+    protected final EventLog toBuild = new EventLog();
 
     public T tags(java.util.List<String> value) {
       toBuild.tags = value;

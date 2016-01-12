@@ -18,7 +18,7 @@ package com.magnet.max.android.logging;
 
 public interface LoggerOptions {
 
-  boolean isConsoleLogggingEnabled();
+  boolean isConsoleLoggingEnabled();
 
   boolean isRemoteLoggingEnabled();
 

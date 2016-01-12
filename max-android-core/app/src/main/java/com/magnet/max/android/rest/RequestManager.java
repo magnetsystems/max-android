@@ -132,7 +132,7 @@ public class RequestManager implements ConnectivityListener {
       }
     }
 
-    //Clean up exipired requests
+    //Clean up expired requests
     for(Request r : expiredRequests) {
       removeReliableRequest(r);
     }
@@ -165,8 +165,8 @@ public class RequestManager implements ConnectivityListener {
   }
 
   private static class RequestInfo {
-    private Request request;
-    private retrofit.Call call;
+    private final Request request;
+    private final retrofit.Call call;
     private final CallOptions options;
     private final retrofit.Callback callback;
 

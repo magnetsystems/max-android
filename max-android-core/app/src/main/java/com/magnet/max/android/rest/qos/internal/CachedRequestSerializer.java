@@ -15,20 +15,22 @@
  */
 package com.magnet.max.android.rest.qos.internal;
 
-public class CachedResponseSerilizer extends AbstractCachedHttpRepresentationSerilizer {
+import java.net.CacheRequest;
+
+public class CachedRequestSerializer extends AbstractCachedHttpRepresentationSerilizer {
 
   @Override public Class<?> getDeserializedType() {
-    return CachedResponse.class;
+    return CacheRequest.class;
   }
 
   @Override public Class<?> getSerializedType() {
     return String.class;
   }
 
-  @Override public CachedResponse deserialize(Object data) {
+  @Override public CacheRequest deserialize(Object data) {
     if(null == data) {
       return null;
     }
-    return (CachedResponse) getGson().fromJson((String) data, getDeserializedType());
+    return (CacheRequest) getGson().fromJson((String) data, getDeserializedType());
   }
 }

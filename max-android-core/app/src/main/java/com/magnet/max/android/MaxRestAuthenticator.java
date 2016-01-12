@@ -72,7 +72,7 @@ public class MaxRestAuthenticator implements Authenticator {
     } else if(requestPath.endsWith(RestConstants.USER_REFRESH_TOKEN_URL)) {
       // User token refresh failed
       MaxCore.userTokenInvalid(originalToken, null);
-    } else if(null != response401 && response401.getErrorType() == Response401.AuthErrorType.CLIENT_ACCESS_TOEKN) {
+    } else if(null != response401 && response401.getErrorType() == Response401.AuthErrorType.CLIENT_ACCESS_TOKEN) {
       renewAppToken(refreshedToken);
     } else if(null != response401 && response401.getErrorType() == Response401.AuthErrorType.USER_ACCESS_TOKEN) {
       renewUserToken(refreshedToken);
@@ -125,7 +125,7 @@ public class MaxRestAuthenticator implements Authenticator {
   }
 
   private void renewAppToken(final AtomicReference<String> refreshedToken) {
-    // Clean up exisiting token
+    // Clean up existing token
     ModuleManager.onAppLogout(MaxCore.getConfig().getClientId());
 
     String authHeader = AuthUtil.generateBasicAuthToken(MaxCore.getConfig().getClientId(), MaxCore.getConfig().getClientSecret());

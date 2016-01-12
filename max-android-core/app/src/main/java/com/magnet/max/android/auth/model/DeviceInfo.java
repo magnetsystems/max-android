@@ -103,7 +103,7 @@ public class DeviceInfo {
    * Builder for {@link DeviceInfo}
    **/
   public static class Builder {
-    private DeviceInfo toBuild = new DeviceInfo();
+    private final DeviceInfo toBuild = new DeviceInfo();
 
     public Builder() {
     }

@@ -110,8 +110,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
     if(registered) {
       if (appTokenRef.get() != null) {
-        Log.d(TAG, "--------appToken is availabe when register : " + appTokenRef.get());
-        Log.d(TAG, "--------configs is availabe when register : " + Arrays.toString(serverConfigsRef.get().entrySet().toArray()));
+        Log.d(TAG, "--------appToken is available when register : " + appTokenRef.get());
+        Log.d(TAG, "--------configs is available when register : " + Arrays.toString(serverConfigsRef.get().entrySet().toArray()));
         module.onInit(MaxCore.getApplicationContext(), serverConfigsRef.get(), callback);
         module.onAppTokenUpdate(appTokenRef.get().getAccessToken(), appTokenRef.get().getMmxAppId(),
             Device.getCurrentDeviceId(), callback);
@@ -365,8 +365,8 @@ import java.util.concurrent.atomic.AtomicReference;
   }
 
   private static class ModuleInfo {
-    private MaxModule module;
-    private ApiCallback callback;
+    private final MaxModule module;
+    private final ApiCallback callback;
 
     public ModuleInfo(MaxModule module, ApiCallback callback) {
       this.module = module;
@@ -422,7 +422,7 @@ import java.util.concurrent.atomic.AtomicReference;
         //editor.putString("appToken", encryptor.encryptString(gson.toJson(appTokenRef.get())));
         editor.putString(KEY_APP_TOKEN, gson.toJson(appTokenRef.get()));
       }
-      editor.commit();
+      editor.apply();
 
       //Log.d(TAG, "-------------updating userName = " + userIdRef.get());
       //Log.d(TAG, "-------------updating appToken = " + appTokenRef.get().getAccessToken());
@@ -443,7 +443,7 @@ import java.util.concurrent.atomic.AtomicReference;
         //editor.putString("userToken", encryptor.encryptString(gson.toJson(userTokenRef.get())));
         editor.putString(KEY_USER_TOKEN, gson.toJson(userTokenRef.get()));
       }
-      editor.commit();
+      editor.apply();
 
       //Log.d(TAG, "-------------updating userName = " + userIdRef.get());
       //Log.d(TAG, "-------------updating userToken = " + userTokenRef.get().getAccessToken());
@@ -452,7 +452,7 @@ import java.util.concurrent.atomic.AtomicReference;
     public void saveRememberMe(boolean rememberMe) {
       SharedPreferences.Editor editor = credentialStore.edit();
       editor.putBoolean(KEY_REMEMBER_ME, rememberMe);
-      editor.commit();
+      editor.apply();
 
       //Log.d(TAG, "-------------updating userName = " + userIdRef.get());
       //Log.d(TAG, "-------------updating userToken = " + userTokenRef.get().getAccessToken());
@@ -465,7 +465,7 @@ import java.util.concurrent.atomic.AtomicReference;
       } else {
         editor.remove(KEY_SERVER_CONFIGS);
       }
-      editor.commit();
+      editor.apply();
     }
 
     public void loadCredentials() {

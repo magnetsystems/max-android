@@ -325,7 +325,7 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
   }
 
   private boolean isTimeoutValid(int value, Method method, Timeout timeout) {
-    if (value > Integer.MAX_VALUE) {
+    if (value == Integer.MAX_VALUE) {
       Log.e(TAG, "Timeout " + timeout + " for method " + method + " is too big");
       return false;
     } else if (value < 0) {
