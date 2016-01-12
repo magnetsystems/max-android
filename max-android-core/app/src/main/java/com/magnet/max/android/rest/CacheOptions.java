@@ -18,7 +18,7 @@ package com.magnet.max.android.rest;
 public class CacheOptions {
   private static final String TAG = CacheOptions.class.getSimpleName();
 
-  // Caching controll
+  // Caching control
   private int maxCacheAge;
   private boolean alwaysUseCacheIfOffline;
 
@@ -28,7 +28,7 @@ public class CacheOptions {
   private boolean useMock;
 
   /**
-   * private constructor, alway use builder
+   * private constructor, always use builder
    */
   private CacheOptions() {
   }
@@ -60,7 +60,7 @@ public class CacheOptions {
   }
 
   public static class Builder {
-    private CacheOptions toBuild = new CacheOptions();
+    private final CacheOptions toBuild = new CacheOptions();
 
     public Builder maxCacheAge(int value) {
       toBuild.maxCacheAge = value;

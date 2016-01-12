@@ -49,10 +49,10 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
 
   private static final int WAIT_TIME_SECONDS = 5;
 
-  private CountDownLatch onInitSignal = new CountDownLatch(1);
-  private CountDownLatch onAppTokenSignal = new CountDownLatch(1);
-  private CountDownLatch onUserTokenSignal = new CountDownLatch(1);
-  private CountDownLatch onUserTokenInvalidSignal = new CountDownLatch(1);
+  private final CountDownLatch onInitSignal = new CountDownLatch(1);
+  private final CountDownLatch onAppTokenSignal = new CountDownLatch(1);
+  private final CountDownLatch onUserTokenSignal = new CountDownLatch(1);
+  private final CountDownLatch onUserTokenInvalidSignal = new CountDownLatch(1);
   private BroadcastReceiver appTokenBroadcastReceiver;
   private BroadcastReceiver userTokenBroadcastReceiver;
 

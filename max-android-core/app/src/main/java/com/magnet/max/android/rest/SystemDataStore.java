@@ -19,8 +19,8 @@ import android.content.Context;
 import android.util.Log;
 import com.activeandroid.ActiveAndroid;
 import com.activeandroid.Configuration;
-import com.magnet.max.android.rest.qos.internal.CachedRequestSerilizer;
-import com.magnet.max.android.rest.qos.internal.CachedResponseSerilizer;
+import com.magnet.max.android.rest.qos.internal.CachedRequestSerializer;
+import com.magnet.max.android.rest.qos.internal.CachedResponseSerializer;
 import com.magnet.max.android.rest.qos.internal.ReliableRequestEntity;
 import com.magnet.max.android.rest.qos.internal.ResponseCacheEntity;
 
@@ -32,7 +32,7 @@ public class SystemDataStore {
 
   private final Context applicationContext;
 
-  private boolean toRecreate;
+  private final boolean toRecreate;
 
   private SystemDataStore(Context applicationContext, boolean toRecreate) {
     this.applicationContext = applicationContext;
@@ -41,9 +41,9 @@ public class SystemDataStore {
     Configuration.Builder configurationBuilder = new Configuration.Builder(applicationContext);
     configurationBuilder.setDatabaseName(DB_NAME).setDatabaseVersion(4);
     configurationBuilder.addModelClass(ReliableRequestEntity.class);
-    configurationBuilder.addTypeSerializer(CachedRequestSerilizer.class);
+    configurationBuilder.addTypeSerializer(CachedRequestSerializer.class);
     configurationBuilder.addModelClass(ResponseCacheEntity.class);
-    configurationBuilder.addTypeSerializer(CachedResponseSerilizer.class);
+    configurationBuilder.addTypeSerializer(CachedResponseSerializer.class);
     ActiveAndroid.initialize(configurationBuilder.create());
 
     Log.d(TAG, "---------system db initialized ....");

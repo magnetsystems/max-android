@@ -65,7 +65,7 @@ final public class User implements Parcelable {
   @SerializedName("userAccountData")
   private java.util.Map<String, String> mExtras;
 
-  private static AtomicReference<User> sCurrentUserRef = new AtomicReference<>();
+  private static final AtomicReference<User> sCurrentUserRef = new AtomicReference<>();
 
   private static UserService sUserService;
 
@@ -466,7 +466,7 @@ final public class User implements Parcelable {
     this.mFirstName = in.readString();
     this.mLastName = in.readString();
     this.mTags = in.createStringArray();
-    this.mExtras = ParcelableHelper.stringMapfromBundle(in.readBundle());
+    this.mExtras = ParcelableHelper.stringMapfromBundle(in.readBundle(getClass().getClassLoader()));
   }
 
   public static final Parcelable.Creator<User> CREATOR = new Parcelable.Creator<User>() {

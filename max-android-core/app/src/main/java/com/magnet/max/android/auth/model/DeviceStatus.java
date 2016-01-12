@@ -24,4 +24,4 @@ public enum DeviceStatus {
   ACTIVE,
   CREATED,
   INACTIVE
-};
+}

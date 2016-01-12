@@ -19,7 +19,7 @@ import com.squareup.okhttp.Headers;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CachedHttpRepresentation {
+class CachedHttpRepresentation {
   protected String[] headers;
   protected byte[] body;
 

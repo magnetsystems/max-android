@@ -89,7 +89,7 @@ public class AuthToken {
   * Builder for AuthToken
   **/
   public static class AuthTokenBuilder {
-    private AuthToken toBuild = new AuthToken();
+    private final AuthToken toBuild = new AuthToken();
 
     public AuthTokenBuilder() {
     }

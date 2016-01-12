@@ -39,9 +39,9 @@ import retrofit.MagnetCall;
 /**public**/ class LogFileManager {
   private static final String TAG = LogFileManager.class.getSimpleName();
 
-  private static String PREFIX = "mmlog_";
-  private static SimpleDateFormat logFileNameDateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS");
-  private static String PREF_KEY_LAST_LOG_CREATED_AT = "com.magnet.max.android.lastLogCreatedAt";
+  private static final String PREFIX = "mmlog_";
+  private static final SimpleDateFormat logFileNameDateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS");
+  private static final String PREF_KEY_LAST_LOG_CREATED_AT = "com.magnet.max.android.lastLogCreatedAt";
 
   private static File logsLocation;
   private static File currentLogFile;
@@ -89,7 +89,7 @@ import retrofit.MagnetCall;
     currentLogFileCreatedAt = System.currentTimeMillis();
     SharedPreferences.Editor editor = sharedPrefs.edit();
     editor.putLong(PREF_KEY_LAST_LOG_CREATED_AT, currentLogFileCreatedAt);
-    editor.commit();
+    editor.apply();
 
     if(fileWriter == null){
       try {

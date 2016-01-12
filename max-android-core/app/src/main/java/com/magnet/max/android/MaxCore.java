@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 final public class MaxCore {
   private static final String TAG = MaxCore.class.getSimpleName();
 
-  private static AtomicBoolean mIsInited = new AtomicBoolean(false);
+  private static final AtomicBoolean mIsInited = new AtomicBoolean(false);
 
   private static MaxAndroidConfig mConfig;
 

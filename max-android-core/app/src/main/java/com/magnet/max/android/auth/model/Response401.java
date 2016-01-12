@@ -31,7 +31,7 @@ public class Response401 {
     USER_CREDENTIALS("user_credentials"),
     CLIENT_CREDENTIALS("client_credentials"),
     USER_ACCESS_TOKEN("user_access_token"),
-    CLIENT_ACCESS_TOEKN("client_access_token");
+    CLIENT_ACCESS_TOKEN("client_access_token");
 
     private final String name;
 
@@ -42,7 +42,7 @@ public class Response401 {
     private static final String ERROR_TYPE_CLIENT_ACCESS_TOKEN = "client_access_token";
     private static final String ERROR_TYPE_USER_ACCESS_TOKEN = "user_access_token";
 
-    private AuthErrorType(String name) {
+    AuthErrorType(String name) {
       this.name = name;
     }
 
@@ -52,7 +52,7 @@ public class Response401 {
 
     public static AuthErrorType fromString(String s) {
       if(ERROR_TYPE_CLIENT_ACCESS_TOKEN.equals(s)) {
-        return CLIENT_ACCESS_TOEKN;
+        return CLIENT_ACCESS_TOKEN;
       } else if(ERROR_TYPE_CLIENT_CREDENTIAL.equals(s)) {
         return CLIENT_CREDENTIALS;
       } else if(ERROR_TYPE_GRANT_TYPE.equals(s)) {

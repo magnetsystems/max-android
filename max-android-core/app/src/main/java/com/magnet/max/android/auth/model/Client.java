@@ -99,7 +99,7 @@ public class Client {
   * Builder for Client
   **/
   public static class ClientBuilder {
-    private Client toBuild = new Client();
+    private final Client toBuild = new Client();
 
     public ClientBuilder() {
     }

@@ -28,19 +28,19 @@ public class ReliableCallOptions {
   private static final String TAG = ReliableCallOptions.class.getSimpleName();
   private static final int DEFAULT_EXPIRE_TIME = 30 * 24 * 3600; //One month
 
-  public static ReliableCallOptions DEFAULT = new Builder().expiresIn(DEFAULT_EXPIRE_TIME).build();
+  public static final ReliableCallOptions DEFAULT = new Builder().expiresIn(DEFAULT_EXPIRE_TIME).build();
 
   // QoS controller
   private int expiresIn;
   @Expose
   private Set<Condition> conditions;
 
-  private long createAt;
+  private final long createAt;
 
   private boolean useMock;
 
   /**
-   * private constructor, alway use builder
+   * private constructor, always use builder
    */
   private ReliableCallOptions() {
     createAt = System.currentTimeMillis();
@@ -96,7 +96,7 @@ public class ReliableCallOptions {
   }
 
   public static class Builder {
-    private ReliableCallOptions toBuild = new ReliableCallOptions();
+    private final ReliableCallOptions toBuild = new ReliableCallOptions();
 
     public Builder expiresIn(int value) {
       toBuild.expiresIn = value;

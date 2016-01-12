@@ -25,7 +25,7 @@ import java.util.Map;
 public interface MaxModule {
 
   /**
-   * The name of the service, only used for decription
+   * The name of the service, only used for description
    * @return
    */
   String getName();

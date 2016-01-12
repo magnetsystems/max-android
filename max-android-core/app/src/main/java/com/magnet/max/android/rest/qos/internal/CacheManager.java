@@ -63,7 +63,7 @@ public class CacheManager {
       operation.requestHash = requestHash;
       operation.response = new CachedResponse(response);
       operation.responseCode = response.code();
-      operation.isOffilineCache = options.isAlwaysUseCacheIfOffline();
+      operation.isOfflineCache = options.isAlwaysUseCacheIfOffline();
 
       Log.d(TAG, "Adding cache for request " + request);
     } else {
@@ -100,14 +100,14 @@ public class CacheManager {
       int returnIndex = 0;
       if(!options.isAlwaysUseCacheIfOffline()) {
         for (int i = 0; i < operations.size(); i++) {
-          if(!operations.get(i).isOffilineCache) {
+          if(!operations.get(i).isOfflineCache) {
             returnIndex = i;
           }
         }
       }
       // Pick the first one and remove all others
       for (int i = 0; i < operations.size(); i++) {
-        if(!operations.get(i).isOffilineCache && i != returnIndex) {
+        if(!operations.get(i).isOfflineCache && i != returnIndex) {
           operations.get(i).delete();
         }
       }
