@@ -29,9 +29,9 @@ final public class MaxCore {
 
   private static final AtomicBoolean mIsInited = new AtomicBoolean(false);
 
-  private static MaxAndroidConfig mConfig;
+  private volatile static MaxAndroidConfig mConfig;
 
-  private static Context mApplicationContext;
+  private volatile static Context mApplicationContext;
 
   private static MagnetServiceAdapter mServiceAdapter;
 

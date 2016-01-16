@@ -353,7 +353,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
   private static void refreshServerConfigs(Map<String, String> newConfigs) {
     if(null != newConfigs && !newConfigs.isEmpty()) {
-      serverConfigsRef.get().clear();
+      //serverConfigsRef.get().clear();
       if(null != MaxCore.getConfig().getAllConfigs()) {
         serverConfigsRef.get().putAll(MaxCore.getConfig().getAllConfigs());
       }
