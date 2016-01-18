@@ -28,7 +28,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
 
-public abstract class AbstractCachedHttpRepresentationSerilizer extends TypeSerializer {
+abstract class AbstractCachedHttpRepresentationSerilizer extends TypeSerializer {
   private static Gson gson;
 
   @Override public String serialize(Object data) {

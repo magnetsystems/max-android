@@ -15,13 +15,17 @@
  */
 package com.magnet.max.android;
 
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.Log;
 import com.magnet.max.android.auth.model.DeviceInfo;
 import com.magnet.max.android.auth.model.DeviceStatus;
 import com.magnet.max.android.auth.model.OsType;
 import com.magnet.max.android.auth.model.PushAuthorityType;
-import com.magnet.max.android.auth.model.UserStatus;
 import com.magnet.max.android.util.DeviceUtil;
+import com.magnet.max.android.util.EqualityUtil;
+import com.magnet.max.android.util.HashCodeBuilder;
+import com.magnet.max.android.util.StringUtil;
 import retrofit.Callback;
 import retrofit.MagnetCall;
 import retrofit.Response;
@@ -30,7 +34,7 @@ import retrofit.Response;
  * The Device class is a local representation of a device in the MagnetMax platform.
  * This class provides various device specific methods, like registering a the device with GCM registration id.
  */
-public class Device {
+public class Device implements Parcelable {
   private static final String TAG = "Device";
 
   private String[] tags;
@@ -160,4 +164,99 @@ public class Device {
     return deviceId;
   }
 
+  /**
+   * Compares this Device object with the specified object and indicates if they
+   * are equal. Following properties are compared :
+   * <p><ul>
+   * <li>deviceId
+   * <li>deviceToken
+   * <li>os
+   * <li>pushAuthority
+   * <li>deviceStatus
+   * </ul><p>
+   * @param obj
+   * @return
+   */
+  @Override
+  public boolean equals(Object obj) {
+    if(!EqualityUtil.quickCheck(this, obj)) {
+      return false;
+    }
+
+    Device theOther = (Device) obj;
+    return StringUtil.isStringValueEqual(deviceId, theOther.getDeviceId()) &&
+        StringUtil.isStringValueEqual(deviceToken, theOther.getDeviceToken()) &&
+        os == theOther.getOs() &&
+        pushAuthority == theOther.getPushAuthority() &&
+        deviceStatus == theOther.getDeviceStatus();
+  }
+
+  /**
+   *  Returns an integer hash code for this object.
+   *  @see #equals(Object) for the properties used for hash calculation.
+   * @return
+   */
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().hash(deviceId).hash(deviceToken).hash(os)
+        .hash(pushAuthority).hash(deviceStatus).hashCode();
+  }
+
+  @Override public String toString() {
+    return new StringBuilder().append("{")
+        .append("deviceId = ").append(deviceId).append(", ")
+        .append("deviceToken = ").append(deviceToken).append(", ")
+        .append("os = ").append(os).append(", ")
+        .append("pushAuthority = ").append(pushAuthority).append(", ")
+        .append("deviceStatus = ").append(deviceStatus)
+        .append("}")
+        .toString();
+  }
+
+  //----------------Parcelable Methods----------------
+
+  @Override public int describeContents() {
+    return 0;
+  }
+
+  @Override public void writeToParcel(Parcel dest, int flags) {
+    dest.writeStringArray(this.tags);
+    dest.writeInt(this.os == null ? -1 : this.os.ordinal());
+    dest.writeString(this.osVersion);
+    dest.writeString(this.deviceToken);
+    dest.writeString(this.userId);
+    dest.writeInt(this.deviceStatus == null ? -1 : this.deviceStatus.ordinal());
+    dest.writeString(this.label);
+    dest.writeInt(this.pushAuthority == null ? -1 : this.pushAuthority.ordinal());
+    dest.writeString(this.deviceId);
+  }
+
+  protected Device() {
+  }
+
+  protected Device(Parcel in) {
+    this.tags = in.createStringArray();
+    int tmpOs = in.readInt();
+    this.os = tmpOs == -1 ? null : OsType.values()[tmpOs];
+    this.osVersion = in.readString();
+    this.deviceToken = in.readString();
+    this.userId = in.readString();
+    int tmpDeviceStatus = in.readInt();
+    this.deviceStatus = tmpDeviceStatus == -1 ? null : DeviceStatus.values()[tmpDeviceStatus];
+    this.label = in.readString();
+    int tmpPushAuthority = in.readInt();
+    this.pushAuthority =
+        tmpPushAuthority == -1 ? null : PushAuthorityType.values()[tmpPushAuthority];
+    this.deviceId = in.readString();
+  }
+
+  public static final Parcelable.Creator<Device> CREATOR = new Parcelable.Creator<Device>() {
+    public Device createFromParcel(Parcel source) {
+      return new Device(source);
+    }
+
+    public Device[] newArray(int size) {
+      return new Device[size];
+    }
+  };
 }

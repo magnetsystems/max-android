@@ -23,14 +23,14 @@ import com.magnet.max.android.MaxCore;
 public class RenewTokenRequest {
 
   @SerializedName("refresh_token")
-  protected String refreshToken;
+  protected final String refreshToken;
   @SerializedName("client_id")
-  protected String clientId;
+  protected final String clientId;
   @SerializedName("grant_type")
-  protected String grantType = "refresh_token";
+  protected final String grantType = "refresh_token";
   @SerializedName("device_id")
-  protected String deviceId;
-  private String scope = "user";
+  protected final String deviceId;
+  private final String scope = "user";
 
   public RenewTokenRequest(String refreshToken) {
     this.refreshToken = refreshToken;

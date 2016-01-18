@@ -32,8 +32,8 @@ public class ResponseCacheEntity extends Model {
   @Column(name="url")
   public String url;
 
-  @Column(name="isOffilineCache")
-  public boolean isOffilineCache;
+  @Column(name="isOfflineCache")
+  public boolean isOfflineCache;
 
   /**
    * JSON
@@ -73,8 +73,8 @@ public class ResponseCacheEntity extends Model {
     return response;
   }
 
-  public boolean isOffilineCache() {
-    return isOffilineCache;
+  public boolean isOfflineCache() {
+    return isOfflineCache;
   }
 
   public Long getCreatedAt() {

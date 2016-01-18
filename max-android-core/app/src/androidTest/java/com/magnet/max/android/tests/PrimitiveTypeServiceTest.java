@@ -146,7 +146,7 @@ public abstract class PrimitiveTypeServiceTest extends AndroidTestCase {
     */
   @MediumTest
   public void testReturnListOfBytes() {
-    final java.util.List<Byte> body = Arrays.asList(new Byte((byte) 0xe0), new Byte((byte) 0xe1));
+    final java.util.List<Byte> body = Arrays.asList(Byte.valueOf((byte) 0xe0), Byte.valueOf((byte) 0xe1));
     final CountDownLatch asyncCallBackSignal = new CountDownLatch(1);
     getPrimitiveTypeService().returnListOfBytes(body,
         new retrofit.Callback<java.util.List<Byte>>() {
@@ -1175,9 +1175,9 @@ public abstract class PrimitiveTypeServiceTest extends AndroidTestCase {
   @MediumTest
   public void testReturnMapOfBytes() {
     final java.util.Map<String, Byte> body = new HashMap<>();
-    body.put("one", new Byte((byte) 0xe1));
-    body.put("two", new Byte((byte) 0xe2));
-    body.put("three", new Byte((byte) 0xe3));
+    body.put("one", Byte.valueOf((byte) 0xe1));
+    body.put("two", Byte.valueOf((byte) 0xe2));
+    body.put("three", Byte.valueOf((byte) 0xe3));
     final CountDownLatch asyncCallBackSignal = new CountDownLatch(1);
     getPrimitiveTypeService().returnMapOfBytes(body,
         new retrofit.Callback<java.util.Map<String, Byte>>() {

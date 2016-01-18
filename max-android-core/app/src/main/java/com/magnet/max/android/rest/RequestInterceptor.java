@@ -89,6 +89,7 @@ public class RequestInterceptor implements Interceptor {
     }
 
     Response response = null;
+    long startTime = System.currentTimeMillis();
     try {
       // Modify request
       if(null != token || useMock) {
@@ -118,9 +119,13 @@ public class RequestInterceptor implements Interceptor {
       //} else {
       //  throw e;
       //}
-
+      Log.e(TAG, "error when getting response", e);
       throw e;
     }
+
+    Log.d(TAG, "---------Response for url : " + request.method() + " " + request.urlString()
+        + " : code = " +response.code() + ", message = " + response.message()
+        + " in " + (System.currentTimeMillis() - startTime) + " ms");
 
     //Save/Update response in cache
     if(response.isSuccessful()

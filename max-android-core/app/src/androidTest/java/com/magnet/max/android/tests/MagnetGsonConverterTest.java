@@ -32,9 +32,9 @@ import junit.framework.TestCase;
 import okio.Buffer;
 import retrofit.Converter;
 
-public class MagnetGsonConverterTest extends TestCase {
+@SuppressWarnings("ALL") public class MagnetGsonConverterTest extends TestCase {
 
-  private MagnetGsonConverterFactory magnetGsonConverterFactory = MagnetGsonConverterFactory.create();
+  private final MagnetGsonConverterFactory magnetGsonConverterFactory = MagnetGsonConverterFactory.create();
 
   @SmallTest
   public void testGson() {
@@ -53,7 +53,7 @@ public class MagnetGsonConverterTest extends TestCase {
   @SmallTest
   public void testPrimitiveTypeMarshalling() {
     Converter magnetGsonConverter = magnetGsonConverterFactory.get(Integer.class);
-    RequestBody requestBody = magnetGsonConverter.toBody(new Integer(1));
+    RequestBody requestBody = magnetGsonConverter.toBody(Integer.valueOf(1));
     assertResponseBody(requestBody, "1");
   }
 

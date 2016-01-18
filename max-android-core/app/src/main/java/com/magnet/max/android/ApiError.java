@@ -21,8 +21,8 @@ package com.magnet.max.android;
 public class ApiError extends RuntimeException {
   /** Network error */
   public static int API_ERROR_KIND_NETWORK = 1;
-  /** Unexpedted error */
-  public static int API_ERROR_UNEXPECTED = 100;
+  /** Unexpected error */
+  public static final int API_ERROR_UNEXPECTED = 100;
 
   /**
    * The kind of error. Except predefined @see ApiError#API_ERROR_KIND_NETWORK and @see ApiError#API_ERROR_UNEXPECTED,

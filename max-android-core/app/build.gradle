@@ -18,7 +18,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'maven'
 
 archivesBaseName = 'magnet-max-android-core'
-version = "2.1.0"
+version = "2.3.0"
 group = "com.magnet.max.android"
 
 configurations {
@@ -102,7 +102,7 @@ dependencies {
     compile 'com.squareup.okhttp:okhttp:2.5.0'
     compile 'com.squareup.okhttp:okhttp-ws:2.5.0'
     compile 'com.google.code.gson:gson:2.3.1'
-    compile "com.android.support:support-v4:18.0.+"
+    compile "com.android.support:support-v4:20.0.+"
 
     androidTestCompile 'org.apache.commons:commons-lang3:3.3.2'
     androidTestCompile 'com.squareup.assertj:assertj-android:1.1.1'

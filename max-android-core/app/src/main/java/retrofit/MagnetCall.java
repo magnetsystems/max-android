@@ -114,7 +114,7 @@ public class MagnetCall<T> {
   }
 
   /**
-   * Extract the callback in the last argurment and remove it from OkHttpCall
+   * Extract the callback in the last argument and remove it from OkHttpCall
    * @param okHttpCall
    * @return
    */

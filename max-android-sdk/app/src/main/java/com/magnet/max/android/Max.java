@@ -15,15 +15,18 @@
 package com.magnet.max.android;
 
 import android.content.Context;
+import android.util.Log;
 import com.magnet.max.android.ApiCallback;
 import com.magnet.max.android.MaxCore;
 import com.magnet.max.android.MaxModule;
 import com.magnet.max.android.config.MaxAndroidConfig;
+import com.magnet.mmx.client.api.MMX;
 
 /**
  * This class is the entry point of Magnet Max Android SDK.
  */
 public class Max {
+  private static final String TAG = Max.class.getSimpleName();
 
   // Disable default constructor
   private Max() {}
@@ -34,7 +37,16 @@ public class Max {
    * @param config
    */
   public static synchronized void init(Context context, MaxAndroidConfig config) {
-    MaxCore.init(context, config);
+    try {
+      MaxCore.init(context, config);
+    } catch (IllegalStateException ise) {
+      if(ise.getMessage().equals("MaxCore has been already inited with same config")) {
+        Log.w(TAG, ise.getMessage());
+        return;
+      }
+    }
+
+    MaxCore.register(MMX.getModule());
   }
 
   /**
@@ -42,8 +54,12 @@ public class Max {
    * @param module
    * @param callback
    */
+  @Deprecated
   public static void initModule(MaxModule module, ApiCallback<Boolean> callback) {
-    MaxCore.initModule(module, callback);
+    //MaxCore.initModule(module, callback);
+    if(null != callback) {
+      callback.success(true);
+    }
   }
 
   /**
@@ -51,8 +67,12 @@ public class Max {
    * @param module
    * @param callback
    */
+  @Deprecated
   public static void deInitModule(MaxModule module, ApiCallback<Boolean> callback) {
-    MaxCore.deInitModule(module, callback);
+    //MaxCore.deInitModule(module, callback);
+    if(null != callback) {
+      callback.success(true);
+    }
   }
 
   /**

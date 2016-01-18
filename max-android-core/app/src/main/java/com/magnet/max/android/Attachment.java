@@ -18,7 +18,12 @@ package com.magnet.max.android;
 
 import android.content.Context;
 import android.os.AsyncTask;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.Log;
+import com.magnet.max.android.util.EqualityUtil;
+import com.magnet.max.android.util.HashCodeBuilder;
+import com.magnet.max.android.util.ParcelableHelper;
 import com.magnet.max.android.util.StringUtil;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.RequestBody;
@@ -32,7 +37,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import retrofit.Callback;
 import retrofit.Response;
 import retrofit.http.POST;
@@ -40,7 +48,7 @@ import retrofit.http.POST;
 /**
  * Attachment is used to save/download large content (such as file) to/from Max server.
  */
-final public class Attachment {
+final public class Attachment implements Parcelable {
 
   /**
    * Status of the attachment
@@ -124,7 +132,7 @@ final public class Attachment {
 
   /**
    * Download the content of attachment as {@link InputStream}
-   * The stream should be read in a backgroud thread
+   * The stream should be read in a background thread
    */
   public static abstract class DownloadAsStreamListener extends AbstractDownloadListener<InputStream> {
   }
@@ -154,12 +162,14 @@ final public class Attachment {
   protected transient Object content;
 
   protected transient byte[] data;
-  /** The id to retrieve the attachement from server */
+  /** The id to retrieve the attachment from server */
   protected String attachmentId;
 
   protected transient String downloadUrl;
 
   private String senderId;
+
+  private transient Map<String, String> metaData;
 
   protected transient AttachmentService attachmentService;
 
@@ -279,6 +289,7 @@ final public class Attachment {
     this.summary = description;
     this.mimeType = mimeType;
     this.status = Status.INIT;
+    this.senderId = User.getCurrentUserId();
   }
 
   private byte[] getAsBytes() {
@@ -383,10 +394,6 @@ final public class Attachment {
   }
 
   private String getSenderId() {
-    if(StringUtil.isEmpty(senderId)) {
-      senderId = User.getCurrentUserId();
-    }
-
     return senderId;
   }
 
@@ -397,7 +404,7 @@ final public class Attachment {
   public void upload(final UploadListener listener) {
     if(StringUtil.isNotEmpty(attachmentId)) {
       // Already uploaded
-      Log.d(TAG, "Aready uploaded");
+      Log.d(TAG, "Already uploaded");
       if(null != listener) {
         listener.onComplete(this);
       }
@@ -409,6 +416,7 @@ final public class Attachment {
         listener.onStart(this);
       }
 
+      final AtomicReference<Long> startTime = new AtomicReference<>();
       Callback<String> uploadCallback = new Callback<String>() {
         @Override public void onResponse(Response<String> response) {
           if (response.isSuccess()) {
@@ -416,6 +424,7 @@ final public class Attachment {
             if (StringUtil.isNotEmpty(result)) {
               attachmentId = result;
               status = Status.COMPLETE;
+              Log.d(TAG, "It took " + (System.currentTimeMillis() - startTime.get())/1000 + " seconds to upload attachment " + attachmentId);
               if (null != listener) {
                 listener.onComplete(Attachment.this);
               }
@@ -441,13 +450,15 @@ final public class Attachment {
         }
       };
 
+      RequestBody requestBody = null;
       if(sourceType == ContentSourceType.FILE) {
-        getAttachmentService().upload(RequestBody.create(MediaType.parse(getMimeType()), (File) content), uploadCallback)
-            .executeInBackground();
+        requestBody = RequestBody.create(MediaType.parse(getMimeType()), (File) content);
       } else {
-        getAttachmentService().upload(RequestBody.create(MediaType.parse(getMimeType()), getAsBytes()), uploadCallback)
-            .executeInBackground();
+        requestBody = RequestBody.create(MediaType.parse(getMimeType()), getAsBytes());
       }
+      startTime.set(System.currentTimeMillis());
+      getAttachmentService().upload(metaData, requestBody, uploadCallback)
+          .executeInBackground();
 
       status = Status.TRANSFERING;
     } else if(status == Status.TRANSFERING) {
@@ -519,6 +530,83 @@ final public class Attachment {
     downloader.download();
   }
 
+  /**
+   * Added key-value pair meta data for the attachment which will be saved on server
+   * @param key
+   * @param value
+   */
+  public void addMetaData(String key, String value) {
+    if(StringUtil.isEmpty(key)) {
+      throw new IllegalArgumentException("Key shouldn't be null");
+    }
+
+    if(null == metaData) {
+      metaData = new HashMap<>();
+    }
+
+    metaData.put(key, value);
+  }
+
+  public void setMetaData(Map<String, String> metaData) {
+    if(null != metaData) {
+      metaData.clear();
+    }
+    this.metaData = metaData;
+  }
+
+  /**
+   * Compares this Attachment object with the specified object and indicates if they
+   * are equal. Following properties are compared :
+   * <p><ul>
+   * <li>attachmentId
+   * <li>name
+   * <li>mimeType
+   * <li>status
+   * <li>length
+   * <li>sourceType
+   * </ul><p>
+   * @param obj
+   * @return
+   */
+  @Override
+  public boolean equals(Object obj) {
+    if(!EqualityUtil.quickCheck(this, obj)) {
+      return false;
+    }
+
+    Attachment theOther = (Attachment) obj;
+    return StringUtil.isStringValueEqual(attachmentId, theOther.getAttachmentId()) &&
+        StringUtil.isStringValueEqual(name, theOther.getName()) &&
+        StringUtil.isStringValueEqual(mimeType, theOther.getMimeType()) &&
+        status == theOther.getStatus() &&
+        length == theOther.getLength() &&
+        sourceType == theOther.getSourceType();
+  }
+
+  /**
+   *  Returns an integer hash code for this object.
+   *  @see #equals(Object) for the properties used for hash calculation.
+   * @return
+   */
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().hash(attachmentId).hash(name).hash(mimeType)
+        .hash(status).hash(length).hash(sourceType).hashCode();
+  }
+
+  @Override public String toString() {
+    return new StringBuilder().append("{")
+        .append("attachmentId = ").append(attachmentId).append(", ")
+        .append("name = ").append(name).append(", ")
+        .append("status = ").append(status).append(", ")
+        .append("sourceType = ").append(sourceType).append(", ")
+        .append("mimeType = ").append(mimeType).append(", ")
+        .append("length = ").append(length).append(", ")
+        .append("metaData = ").append(StringUtil.toString(metaData))
+        .append("}")
+        .toString();
+  }
+
   protected AttachmentService getAttachmentService() {
     if(null == attachmentService) {
       attachmentService = MaxCore.create(AttachmentService.class);
@@ -585,6 +673,9 @@ final public class Attachment {
     if(StringUtil.isEmpty(attachmentId)) {
       throw new IllegalStateException("AttachmentId is not available");
     }
+    if(StringUtil.isEmpty(senderId)) {
+      throw new IllegalStateException("SenderId shouldn't be null");
+    }
   }
 
   private static File getDefaultDownloadDir() {
@@ -611,6 +702,7 @@ final public class Attachment {
 
     protected final AbstractDownloadListener listener;
     protected final ContentSourceType sourceType;
+    protected long startTime;
 
     abstract protected void doDownload();
 
@@ -621,8 +713,11 @@ final public class Attachment {
 
     public void download() {
       Status currentStatus = getStatus();
+
+      startTime = System.currentTimeMillis();
+
       if (currentStatus == Status.COMPLETE) {
-        //TODO : content is not cached right now, alway re-download
+        //TODO : content is not cached right now, always re-download
         //// Already downloaded
         //if (null != listener) {
         //  listener.onComplete(this);
@@ -649,6 +744,10 @@ final public class Attachment {
         throw new IllegalStateException("Attachment is downloading");
       }
     }
+
+    protected void logTime() {
+      Log.d(TAG, "It took " + (System.currentTimeMillis() - startTime)/1000 + " seconds to download attachment " + attachmentId);
+    }
   }
 
   private class BytesDownloader extends AbstractDownloader {
@@ -658,12 +757,13 @@ final public class Attachment {
     }
 
     @Override protected void doDownload() {
-      getAttachmentService().downloadAsBytes(attachmentId, new Callback<byte[]>() {
+      getAttachmentService().downloadAsBytes(attachmentId, senderId, new Callback<byte[]>() {
         @Override public void onResponse(Response<byte[]> response) {
           if (response.isSuccess()) {
             data = response.body();
             length = data.length;
             status = Status.COMPLETE;
+            logTime();
             if (null != listener) {
               listener.onComplete(data);
             }
@@ -697,7 +797,7 @@ final public class Attachment {
     }
 
     @Override protected void doDownload() {
-      getAttachmentService().downloadAsStream(attachmentId, new Callback<ResponseBody>() {
+      getAttachmentService().downloadAsStream(attachmentId, senderId, new Callback<ResponseBody>() {
         @Override public void onResponse(final Response<ResponseBody> response) {
           if (response.isSuccess()) {
             // Read the InputStream in AsyncTask
@@ -708,6 +808,7 @@ final public class Attachment {
                   writeInputStreamToFile(response.body().byteStream(), destinationFile);
                   status = Attachment.Status.COMPLETE;
                   length = destinationFile.length();
+                  logTime();
                 } catch (IOException e) {
                   return e;
                 }
@@ -782,12 +883,13 @@ final public class Attachment {
     }
 
     @Override protected void doDownload() {
-      getAttachmentService().downloadAsStream(attachmentId, new Callback<ResponseBody>() {
+      getAttachmentService().downloadAsStream(attachmentId, senderId, new Callback<ResponseBody>() {
         @Override public void onResponse(Response<ResponseBody> response) {
           if (response.isSuccess()) {
             status = Status.COMPLETE;
             try {
               length = response.body().contentLength();
+              logTime();
               if (null != listener) {
                 listener.onComplete(response.body().byteStream());
               }
@@ -814,4 +916,57 @@ final public class Attachment {
       }).executeInBackground();
     }
   }
+
+  //----------------Parcelable Methods----------------
+
+  @Override public int describeContents() {
+    return 0;
+  }
+
+  @Override public void writeToParcel(Parcel dest, int flags) {
+    dest.writeInt(this.status == null ? -1 : this.status.ordinal());
+    dest.writeInt(this.sourceType == null ? -1 : this.sourceType.ordinal());
+    dest.writeString(this.name);
+    dest.writeString(this.summary);
+    dest.writeString(this.mimeType);
+    dest.writeLong(this.length);
+    dest.writeString(this.charsetName);
+    dest.writeByteArray(this.data);
+    dest.writeString(this.attachmentId);
+    dest.writeString(this.downloadUrl);
+    dest.writeString(this.senderId);
+    dest.writeBundle(ParcelableHelper.stringMapToBundle(this.metaData));
+  }
+
+  protected Attachment(Parcel in) {
+    int tmpStatus = in.readInt();
+    this.status = tmpStatus == -1 ? null : Status.values()[tmpStatus];
+    int tmpSourceType = in.readInt();
+    this.sourceType = tmpSourceType == -1 ? null : ContentSourceType.values()[tmpSourceType];
+    this.name = in.readString();
+    this.summary = in.readString();
+    this.mimeType = in.readString();
+    this.length = in.readLong();
+    this.charsetName = in.readString();
+    this.content = in.readParcelable(Object.class.getClassLoader());
+    this.data = in.createByteArray();
+    this.attachmentId = in.readString();
+    this.downloadUrl = in.readString();
+    this.senderId = in.readString();
+    this.metaData = ParcelableHelper.stringMapfromBundle(in.readBundle(getClass().getClassLoader()));
+  }
+
+  protected Attachment() {
+  }
+
+  public static final Parcelable.Creator<Attachment> CREATOR =
+      new Parcelable.Creator<Attachment>() {
+        public Attachment createFromParcel(Parcel source) {
+          return new Attachment(source);
+        }
+
+        public Attachment[] newArray(int size) {
+          return new Attachment[size];
+        }
+      };
 }

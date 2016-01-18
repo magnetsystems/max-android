@@ -17,7 +17,7 @@ package com.magnet.max.android.logging;
 
 public class DefaultLoggerOptions implements LoggerOptions {
 
-  private boolean consoleLogggingEnabled = false;
+  private boolean consoleLoggingEnabled = false;
 
   private boolean remoteLoggingEnabled = true;
 
@@ -29,12 +29,12 @@ public class DefaultLoggerOptions implements LoggerOptions {
 
   //private int logUploadingFrequencyInMinutes = 60 * 60 * 24;
 
-  @Override public boolean isConsoleLogggingEnabled() {
-    return consoleLogggingEnabled;
+  public boolean isConsoleLoggingEnabled() {
+    return consoleLoggingEnabled;
   }
 
-  public void setConsoleLogggingEnabled(boolean consoleLogggingEnabled) {
-    this.consoleLogggingEnabled = consoleLogggingEnabled;
+  public void setConsoleLoggingEnabled(boolean consoleLoggingEnabled) {
+    this.consoleLoggingEnabled = consoleLoggingEnabled;
   }
 
   @Override public boolean isRemoteLoggingEnabled() {

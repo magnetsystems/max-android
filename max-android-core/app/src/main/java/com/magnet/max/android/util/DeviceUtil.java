@@ -72,7 +72,7 @@ public class DeviceUtil {
       // save it to shared preferences
       shared.edit()
           .putString(KEY_DEVICE_ID, result)
-          .commit();
+          .apply();
     }
     uniqueIdRef.set(result);
     return result;
@@ -97,7 +97,7 @@ public class DeviceUtil {
       // save it to shared preferences
       shared.edit()
           .putString(KEY_DEVICE_ID, result)
-          .commit();
+          .apply();
     }
     uniqueIdRef.set(result);
     return result;
@@ -129,9 +129,7 @@ public class DeviceUtil {
     byte[] paddedArray = bytes;
     if (remaining != 0) {
       paddedArray = new byte[bytes.length + (8 - remaining)];
-      for (int i=0;i<bytes.length;i++) {
-        paddedArray[i] = bytes[i];
-      }
+      System.arraycopy(bytes, 0, paddedArray, 0, bytes.length);
     }
 
     ByteBuffer bb = ByteBuffer.wrap(paddedArray);

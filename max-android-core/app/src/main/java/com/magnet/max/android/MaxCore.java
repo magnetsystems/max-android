@@ -27,11 +27,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 final public class MaxCore {
   private static final String TAG = MaxCore.class.getSimpleName();
 
-  private static AtomicBoolean mIsInited = new AtomicBoolean(false);
+  private static final AtomicBoolean mIsInited = new AtomicBoolean(false);
 
-  private static MaxAndroidConfig mConfig;
+  private volatile static MaxAndroidConfig mConfig;
 
-  private static Context mApplicationContext;
+  private volatile static Context mApplicationContext;
 
   private static MagnetServiceAdapter mServiceAdapter;
 
@@ -45,10 +45,10 @@ final public class MaxCore {
       throw new IllegalArgumentException("applicationContext shouldn't be null");
     }
 
-    if(mIsInited.get() && isConfigEqual(config)) {
-      Log.w(TAG, "------MaxCore has been already inited with same config");
-      mApplicationContext = context.getApplicationContext();
-      return;
+    if(mIsInited.get() && context.getApplicationContext().equals(mApplicationContext)&& isConfigEqual(config)) {
+      String message = "MaxCore has been already inited with same config";
+      Log.w(TAG, "------" + message);
+      throw new IllegalStateException(message);
     }
 
     mIsInited.set(false);

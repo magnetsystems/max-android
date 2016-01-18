@@ -15,15 +15,21 @@
  */
 package com.magnet.max.android;
 
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.Log;
 import com.google.gson.annotations.SerializedName;
 import com.magnet.max.android.auth.model.UpdateProfileRequest;
 import com.magnet.max.android.auth.model.UserLoginResponse;
 import com.magnet.max.android.auth.model.UserRealm;
 import com.magnet.max.android.auth.model.UserRegistrationInfo;
-import com.magnet.max.android.auth.model.UserStatus;
 import com.magnet.max.android.auth.model.UserToken;
 import com.magnet.max.android.util.AuthUtil;
+import com.magnet.max.android.util.EqualityUtil;
+import com.magnet.max.android.util.HashCodeBuilder;
+import com.magnet.max.android.util.ParcelableHelper;
+import com.magnet.max.android.util.StringUtil;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,7 +41,7 @@ import retrofit.Response;
  * The User class is a local representation of a user in the MagnetMax platform.
  * This class provides various user specific methods, like authentication, signing up, and search.
  */
-final public class User {
+final public class User implements Parcelable {
   private static final String TAG = "User";
 
   @SerializedName("userIdentifier")
@@ -59,7 +65,7 @@ final public class User {
   @SerializedName("userAccountData")
   private java.util.Map<String, String> mExtras;
 
-  private static AtomicReference<User> sCurrentUserRef = new AtomicReference<>();
+  private static final AtomicReference<User> sCurrentUserRef = new AtomicReference<>();
 
   private static UserService sUserService;
 
@@ -109,16 +115,20 @@ final public class User {
               sCurrentUserRef.set(userLoginResponse.getUser());
             }
 
+            boolean isCallbackCalled = false;
             if (null != userLoginResponse.getAccessToken()) {
-              ModuleManager.onUserLogin(userLoginResponse.getUser().getUserIdentifier(),
+              isCallbackCalled = ModuleManager.onUserLogin(userLoginResponse.getUser().getUserIdentifier(),
                   new UserToken(userLoginResponse.getExpiresIn(), userLoginResponse.getAccessToken(),
                       userLoginResponse.getRefreshToken(), userLoginResponse.getTokenType()),
-                  rememberMe);
+                  rememberMe, callback);
 
               result = true;
             }
 
-            ApiCallbackHelper.executeCallback(callback, Response.success(result));
+            //Only call callback when it's not called by modules
+            if(!isCallbackCalled) {
+              ApiCallbackHelper.executeCallback(callback, Response.success(result));
+            }
           }
 
           @Override public void onFailure(Throwable throwable) {
@@ -203,6 +213,14 @@ final public class User {
    * @param callback
    */
   public static void getUsersByUserNames(List<String> userNames, final ApiCallback<List<User>> callback) {
+    if(null == userNames || userNames.isEmpty()) {
+      if(null != callback) {
+        callback.success(Collections.EMPTY_LIST);
+      }
+
+      return;
+    }
+
     getUserService().getUsersByUserNames(userNames, new Callback<List<User>>() {
       @Override public void onResponse(Response<List<User>> response) {
         ApiCallbackHelper.executeCallback(callback, response);
@@ -220,6 +238,14 @@ final public class User {
    * @param callback
    */
   public static void getUsersByUserIds(List<String> userIds, final ApiCallback<List<User>> callback) {
+    if(null == userIds || userIds.isEmpty()) {
+      if(null != callback) {
+        callback.success(Collections.EMPTY_LIST);
+      }
+
+      return;
+    }
+
     getUserService().getUsersByUserIds(userIds, new Callback<List<User>>() {
       @Override public void onResponse(Response<List<User>> response) {
         ApiCallbackHelper.executeCallback(callback, response);
@@ -352,4 +378,104 @@ final public class User {
 
     return sUserService;
   }
+
+  /**
+   * Compares this User object with the specified object and indicates if they
+   * are equal. Following properties are compared :
+   * <p><ul>
+   * <li>userIdentifier
+   * <li>email
+   * <li>userName
+   * <li>firstName
+   * <li>lastName
+   * <li>userRealm
+   * </ul><p>
+   * @param obj
+   * @return
+   */
+  @Override
+  public boolean equals(Object obj) {
+    if(!EqualityUtil.quickCheck(this, obj)) {
+      return false;
+    }
+
+    User theOther = (User) obj;
+
+    return StringUtil.isStringValueEqual(mUserIdentifier, theOther.getUserIdentifier()) &&
+        StringUtil.isStringValueEqual(mEmail, theOther.getEmail()) &&
+        StringUtil.isStringValueEqual(mUserName, theOther.getUserName()) &&
+        StringUtil.isStringValueEqual(mFirstName, theOther.getFirstName()) &&
+        StringUtil.isStringValueEqual(mLastName, theOther.getLastName()) &&
+        (mUserRealm == theOther.getUserRealm());
+  }
+
+  /**
+   *  Returns an integer hash code for this object.
+   *  @see #equals(Object) for the properties used for hash calculation.
+   * @return
+   */
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder().hash(mUserIdentifier).hash(mEmail).hash(mUserName)
+        .hash(mFirstName).hash(mLastName).hash(mUserRealm).hashCode();
+  }
+
+  @Override public String toString() {
+    return new StringBuilder().append("{")
+        .append("userIdentifier = ").append(mUserIdentifier).append(", ")
+        .append("userName = ").append(mUserName).append(", ")
+        .append("firstName = ").append(mFirstName).append(", ")
+        .append("lastName = ").append(mLastName).append(", ")
+        .append("email = ").append(mEmail).append(", ")
+        .append("userRealm = ").append(mUserRealm).append(", ")
+        .append("roles = ").append(StringUtil.toString(mRoles)).append(", ")
+        .append("tags = ").append(StringUtil.toString(mTags)).append(", ")
+        .append("extras = ").append(StringUtil.toString(mExtras))
+        .append("}")
+        .toString();
+  }
+
+  //----------------Parcelable Methods----------------
+
+  @Override public int describeContents() {
+    return 0;
+  }
+
+  @Override public void writeToParcel(Parcel dest, int flags) {
+    dest.writeString(this.mUserIdentifier);
+    dest.writeString(this.mEmail);
+    dest.writeStringArray(this.mRoles);
+    dest.writeString(this.mUserName);
+    dest.writeInt(this.mUserRealm == null ? -1 : this.mUserRealm.ordinal());
+    dest.writeString(this.mFirstName);
+    dest.writeString(this.mLastName);
+    dest.writeStringArray(this.mTags);
+    dest.writeBundle(ParcelableHelper.stringMapToBundle(this.mExtras));
+  }
+
+  protected User() {
+  }
+
+  protected User(Parcel in) {
+    this.mUserIdentifier = in.readString();
+    this.mEmail = in.readString();
+    this.mRoles = in.createStringArray();
+    this.mUserName = in.readString();
+    int tmpMUserRealm = in.readInt();
+    this.mUserRealm = tmpMUserRealm == -1 ? null : UserRealm.values()[tmpMUserRealm];
+    this.mFirstName = in.readString();
+    this.mLastName = in.readString();
+    this.mTags = in.createStringArray();
+    this.mExtras = ParcelableHelper.stringMapfromBundle(in.readBundle(getClass().getClassLoader()));
+  }
+
+  public static final Parcelable.Creator<User> CREATOR = new Parcelable.Creator<User>() {
+    public User createFromParcel(Parcel source) {
+      return new User(source);
+    }
+
+    public User[] newArray(int size) {
+      return new User[size];
+    }
+  };
 }

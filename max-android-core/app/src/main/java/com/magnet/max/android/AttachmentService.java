@@ -18,12 +18,15 @@ package com.magnet.max.android;
 
 import com.magnet.max.android.rest.annotation.Timeout;
 import com.squareup.okhttp.ResponseBody;
+import java.util.Map;
 import retrofit.MagnetCall;
 import retrofit.http.GET;
+import retrofit.http.HeaderMap;
 import retrofit.http.Multipart;
 import retrofit.http.POST;
 import retrofit.http.Part;
 import retrofit.http.Path;
+import retrofit.http.Query;
 import retrofit.http.Streaming;
 
 /**
@@ -40,7 +43,8 @@ public interface AttachmentService {
   @Timeout(write = 5 * 60)
   @Multipart
   @POST("/api/com.magnet.server/file/save")
-  MagnetCall<String> upload(@Part("file") com.squareup.okhttp.RequestBody body,
+  MagnetCall<String> upload(@HeaderMap Map<String, String> metaData,
+      @Part("file") com.squareup.okhttp.RequestBody body,
       retrofit.Callback<String> callback);
 
   ///**
@@ -56,10 +60,14 @@ public interface AttachmentService {
 
   @Timeout(read = 5 * 60)
   @GET("/api/com.magnet.server/file/download/{fileId}")
-  MagnetCall<byte[]> downloadAsBytes(@Path("fileId") String fileId, retrofit.Callback<byte[]> callback);
+  MagnetCall<byte[]> downloadAsBytes(@Path("fileId") String fileId,
+      @Query("user_id") String userId,
+      retrofit.Callback<byte[]> callback);
 
   @Timeout(read = 5 * 60)
   @GET("/api/com.magnet.server/file/download/{fileId}")
   @Streaming
-  MagnetCall<ResponseBody> downloadAsStream(@Path("fileId") String fileId, retrofit.Callback<ResponseBody> callback);
+  MagnetCall<ResponseBody> downloadAsStream(@Path("fileId") String fileId,
+    @Query("user_id") String userId,
+    retrofit.Callback<ResponseBody> callback);
 }

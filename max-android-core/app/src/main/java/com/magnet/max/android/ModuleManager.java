@@ -24,23 +24,28 @@ import com.google.gson.reflect.TypeToken;
 import com.magnet.max.android.auth.model.ApplicationToken;
 import com.magnet.max.android.auth.model.DeviceInfo;
 import com.magnet.max.android.auth.model.UserToken;
+import com.magnet.max.android.util.EqualityUtil;
+import com.magnet.max.android.util.HashCodeBuilder;
 import com.magnet.max.android.util.SecurePreferences;
 import com.magnet.max.android.util.StringUtil;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**public**/ class ModuleManager {
   private static final String TAG = ModuleManager.class.getSimpleName();
 
-  private static Map<String, List<ModuleInfo>> registeredModules = new HashMap<>();
+  private static Map<String, Set<ModuleInfo>> registeredModules = new HashMap<>();
 
-  private static AtomicReference<ApplicationToken> appTokenRef = new AtomicReference<ApplicationToken>(null);
-  private static AtomicReference<UserToken> userTokenRef = new AtomicReference<UserToken>(null);
-  private static AtomicReference<String> userIdRef = new AtomicReference<String>(null);
-  private static AtomicReference<Map<String, String>> serverConfigsRef = new AtomicReference<>(null);
+  private volatile static AtomicReference<ApplicationToken> appTokenRef = new AtomicReference<ApplicationToken>(null);
+  private volatile static AtomicReference<UserToken> userTokenRef = new AtomicReference<UserToken>(null);
+  private volatile static AtomicReference<String> userIdRef = new AtomicReference<String>(null);
+  private volatile static AtomicReference<Map<String, String>> serverConfigsRef = new AtomicReference<>(null);
 
   private static TokenLocalStore tokenLocalStore;
 
@@ -53,11 +58,8 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     if(null == serverConfigsRef.get()) {
-      serverConfigsRef.set(new HashMap<String, String>());
+      serverConfigsRef.set(MaxCore.getConfig().getAllConfigs());
     } else {
-      serverConfigsRef.get().clear();
-    }
-    if(null != MaxCore.getConfig().getAllConfigs()) {
       serverConfigsRef.get().putAll(MaxCore.getConfig().getAllConfigs());
     }
 
@@ -70,7 +72,7 @@ import java.util.concurrent.atomic.AtomicReference;
     //}
 
     if(null == registeredModules) {
-      registeredModules = new HashMap<String, List<ModuleInfo>>();
+      registeredModules = new HashMap<>();
     } else {
       registeredModules.clear();
     }
@@ -78,7 +80,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
   public static synchronized void deInit() {
     for(ModuleInfo s : getAllRegisteredModules()) {
-      s.getModule().deInitModule();
+      s.getModule().deInitModule(null);
     }
     registeredModules.clear();
   }
@@ -88,33 +90,36 @@ import java.util.concurrent.atomic.AtomicReference;
       throw new IllegalArgumentException("module shouldn't be null");
     }
 
-    Log.d(TAG, "--------register module " + module.getName() + " : " + module);
+    Log.d(TAG, "--------registering module " + module.getName() + " : " + module + "\n" + getAllRegisteredModules());
 
-    List<ModuleInfo> existingModules = registeredModules.get(module.getName());
+    boolean registered = true;
+    Set<ModuleInfo> existingModules = registeredModules.get(module.getName());
     ModuleInfo moduleInfo = new ModuleInfo(module, callback);
     if(null != existingModules) {
-      int index = findModule(existingModules, module);
-      if(index == -1) {
+      if(!existingModules.contains(module)) {
         existingModules.add(moduleInfo);
       } else {
         Log.w(TAG, "MaxModule " + module + " has been registered");
+        registered = false;
       }
     } else {
-      ArrayList<ModuleInfo> moduleInfos = new ArrayList<>();
+      Set<ModuleInfo> moduleInfos = new HashSet<>();
       moduleInfos.add(moduleInfo);
       registeredModules.put(module.getName(), moduleInfos);
     }
 
-    if(appTokenRef.get() != null) {
-      Log.d(TAG, "--------appToken is availabe when register : " + appTokenRef.get());
-      module.onInit(MaxCore.getApplicationContext(), serverConfigsRef.get(), callback);
-      module.onAppTokenUpdate(appTokenRef.get().getAccessToken(), appTokenRef.get().getMmxAppId(),
-          Device.getCurrentDeviceId());
-    }
-    if(userTokenRef.get() != null) {
-      Log.d(TAG, "--------userToken is availabe when register : " + userTokenRef.get());
-      module.onUserTokenUpdate(userTokenRef.get().getAccessToken(), userIdRef.get(),
-          Device.getCurrentDeviceId());
+    if(registered) {
+      if (appTokenRef.get() != null) {
+        Log.d(TAG, "--------appToken is available when register : " + appTokenRef.get());
+        Log.d(TAG, "--------configs is available when register : " + Arrays.toString(serverConfigsRef.get().entrySet().toArray()));
+        module.onInit(MaxCore.getApplicationContext(), serverConfigsRef.get(), callback);
+        module.onAppTokenUpdate(appTokenRef.get().getAccessToken(), appTokenRef.get().getMmxAppId(),
+            Device.getCurrentDeviceId(), callback);
+      }
+      if (userTokenRef.get() != null) {
+        Log.d(TAG, "--------userToken is availabe when register : " + userTokenRef.get());
+        module.onUserTokenUpdate(userTokenRef.get().getAccessToken(), userIdRef.get(), Device.getCurrentDeviceId(), callback);
+      }
     }
   }
 
@@ -125,11 +130,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
     Log.d(TAG, "--------deRegister module " + module.getName() + " : " + module);
 
-    List<ModuleInfo> existingModules = registeredModules.get(module.getName());
-    int existingIndex = findModule(existingModules, module);
-    if(existingIndex >= 0) {
-      existingModules.remove(existingIndex);
-      module.deInitModule();
+    Set<ModuleInfo> existingModules = registeredModules.get(module.getName());
+    if(null != existingModules && existingModules.contains(module)) {
+      existingModules.remove(module);
+      module.deInitModule(null);
       Log.d(TAG, "deinit and remove module " + module.getName());
 
       if(null != callback) {
@@ -172,7 +176,8 @@ import java.util.concurrent.atomic.AtomicReference;
     //}
   }
 
-  public static void onUserLogin(final String userId, UserToken token, boolean rememberMe) {
+  public static boolean onUserLogin(final String userId, UserToken token, boolean rememberMe, ApiCallback<Boolean> callback) {
+    boolean isCallbackCalled = false;
     if(null != token) {
       Log.i(TAG, "userLogin success : ");
 
@@ -180,7 +185,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
       userIdRef.set(userId);
 
-      notifyUserTokenObservers();
+      isCallbackCalled = notifyUserTokenObservers(callback);
 
       registerDevice();
 
@@ -189,9 +194,9 @@ import java.util.concurrent.atomic.AtomicReference;
       }
 
       tokenLocalStore.saveRememberMe(rememberMe);
-    } else {
-
     }
+
+    return isCallbackCalled;
   }
 
   public static void onUserTokenRefresh(final String userId, UserToken token) {
@@ -202,7 +207,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
       userIdRef.set(userId);
 
-      notifyUserTokenObservers();
+      notifyUserTokenObservers(null);
 
       tokenLocalStore.saveUserToken();
     } else {
@@ -284,46 +289,53 @@ import java.util.concurrent.atomic.AtomicReference;
 
   private static List<ModuleInfo> getAllRegisteredModules() {
     List<ModuleInfo> result = new ArrayList<>();
-    for(Map.Entry<String, List<ModuleInfo>> e : registeredModules.entrySet()) {
-      List<ModuleInfo> services = e.getValue();
+    for(Map.Entry<String, Set<ModuleInfo>> e : registeredModules.entrySet()) {
+      Set<ModuleInfo> services = e.getValue();
       if(null != services) {
         result.addAll(services);
       }
     }
+
+    Log.d(TAG, "Registered modules : " + Arrays.toString(result.toArray()));
 
     return result;
   }
 
   private static void notifyConfigObservers() {
     for(ModuleInfo s : getAllRegisteredModules()) {
-      Log.i(TAG, "notify onConfig for : " + s.getModule().getName());
+      Log.i(TAG, "notify onConfig for : " + s.getModule());
       s.getModule().onInit(MaxCore.getApplicationContext(), serverConfigsRef.get(), s.getCallback());
     }
   }
 
   private static void notifyAppTokenObservers() {
     for(ModuleInfo s : getAllRegisteredModules()) {
-      Log.i(TAG, "notify onAppTokenUpdate for : " + s.getModule().getName());
+      Log.i(TAG, "notify onAppTokenUpdate for : " + s.getModule());
       s.getModule().onAppTokenUpdate(
           null != appTokenRef.get() ? appTokenRef.get().getAccessToken() : null,
-          MaxCore.getConfig().getClientId(), Device.getCurrentDeviceId());
+          MaxCore.getConfig().getClientId(), Device.getCurrentDeviceId(), null);
     }
   }
 
-  private static void notifyUserTokenObservers() {
+  private static boolean notifyUserTokenObservers(ApiCallback<Boolean> callback) {
+    boolean isCallbackCalled = false;
     for(ModuleInfo s : getAllRegisteredModules()) {
-      Log.i(TAG, "notify onUserTokenUpdate for : " + s.getModule().getName());
+      Log.i(TAG, "notify onUserTokenUpdate for : " + s.getModule());
       s.getModule()
           .onUserTokenUpdate(
               null != userTokenRef.get() ? userTokenRef.get().getAccessToken() : null,
-              userIdRef.get(), Device.getCurrentDeviceId());
+              userIdRef.get(), Device.getCurrentDeviceId(), callback);
+      //FIXME : assume callback is called here
+      isCallbackCalled = true;
     }
+
+    return isCallbackCalled;
   }
 
   private static void notifyInvalidUserTokenObservers() {
     for(ModuleInfo s : getAllRegisteredModules()) {
       Log.i(TAG, "notify notifyInvalidUserToken for : " + s.getModule().getName());
-      s.getModule().onUserTokenInvalidate();
+      s.getModule().onUserTokenInvalidate(null);
     }
   }
 
@@ -341,7 +353,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
   private static void refreshServerConfigs(Map<String, String> newConfigs) {
     if(null != newConfigs && !newConfigs.isEmpty()) {
-      serverConfigsRef.get().clear();
+      //serverConfigsRef.get().clear();
       if(null != MaxCore.getConfig().getAllConfigs()) {
         serverConfigsRef.get().putAll(MaxCore.getConfig().getAllConfigs());
       }
@@ -353,8 +365,8 @@ import java.util.concurrent.atomic.AtomicReference;
   }
 
   private static class ModuleInfo {
-    private MaxModule module;
-    private ApiCallback callback;
+    private final MaxModule module;
+    private final ApiCallback callback;
 
     public ModuleInfo(MaxModule module, ApiCallback callback) {
       this.module = module;
@@ -367,6 +379,23 @@ import java.util.concurrent.atomic.AtomicReference;
 
     public ApiCallback getCallback() {
       return callback;
+    }
+
+    @Override public String toString() {
+      return new StringBuilder().append("{ module = ").append(module).append(", callback = ").append(callback).append("}").toString();
+    }
+
+    @Override public boolean equals(Object obj) {
+      if(!EqualityUtil.quickCheck(this, obj)) {
+        return false;
+      }
+
+      ModuleInfo theOther = (ModuleInfo) obj;
+      return module.equals(theOther.getModule());
+    }
+
+    @Override public int hashCode() {
+      return new HashCodeBuilder().hash(module).hashCode();
     }
   }
 
@@ -393,7 +422,7 @@ import java.util.concurrent.atomic.AtomicReference;
         //editor.putString("appToken", encryptor.encryptString(gson.toJson(appTokenRef.get())));
         editor.putString(KEY_APP_TOKEN, gson.toJson(appTokenRef.get()));
       }
-      editor.commit();
+      editor.apply();
 
       //Log.d(TAG, "-------------updating userName = " + userIdRef.get());
       //Log.d(TAG, "-------------updating appToken = " + appTokenRef.get().getAccessToken());
@@ -414,7 +443,7 @@ import java.util.concurrent.atomic.AtomicReference;
         //editor.putString("userToken", encryptor.encryptString(gson.toJson(userTokenRef.get())));
         editor.putString(KEY_USER_TOKEN, gson.toJson(userTokenRef.get()));
       }
-      editor.commit();
+      editor.apply();
 
       //Log.d(TAG, "-------------updating userName = " + userIdRef.get());
       //Log.d(TAG, "-------------updating userToken = " + userTokenRef.get().getAccessToken());
@@ -423,7 +452,7 @@ import java.util.concurrent.atomic.AtomicReference;
     public void saveRememberMe(boolean rememberMe) {
       SharedPreferences.Editor editor = credentialStore.edit();
       editor.putBoolean(KEY_REMEMBER_ME, rememberMe);
-      editor.commit();
+      editor.apply();
 
       //Log.d(TAG, "-------------updating userName = " + userIdRef.get());
       //Log.d(TAG, "-------------updating userToken = " + userTokenRef.get().getAccessToken());
@@ -436,7 +465,7 @@ import java.util.concurrent.atomic.AtomicReference;
       } else {
         editor.remove(KEY_SERVER_CONFIGS);
       }
-      editor.commit();
+      editor.apply();
     }
 
     public void loadCredentials() {
@@ -472,21 +501,10 @@ import java.util.concurrent.atomic.AtomicReference;
           //    "-------------credentials reloaded from local userToken = " + userTokenRef.get()
           //        .getAccessToken());
 
-          notifyUserTokenObservers();
+          notifyUserTokenObservers(null);
         }
       }
     }
   }
 
-  private static int findModule(List<ModuleInfo> existingModules, MaxModule module) {
-    if(null != existingModules) {
-      for (int i = 0; i < existingModules.size(); i++) {
-        if (existingModules.get(i).getModule() == module) {
-          return i;
-        }
-      }
-    }
-
-    return -1;
-  }
 }

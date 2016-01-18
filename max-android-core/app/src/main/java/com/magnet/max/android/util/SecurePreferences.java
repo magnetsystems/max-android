@@ -470,7 +470,7 @@ public class SecurePreferences implements SharedPreferences {
 
     SharedPreferences.Editor editor = sharedPreferences.edit();
     editor.clear();
-    editor.commit();
+    editor.apply();
 
     //refresh the sharedPreferences object ref: I found it was retaining old ref/values
     sharedPreferences = null;
@@ -488,7 +488,7 @@ public class SecurePreferences implements SharedPreferences {
       String prefPlainText = unencryptedPrefs.get(prefKey);
       updatedEditor.putString(prefKey, encrypt(prefPlainText));
     }
-    updatedEditor.commit();
+    updatedEditor.apply();
   }
 
 
@@ -507,7 +507,7 @@ public class SecurePreferences implements SharedPreferences {
    * {@link #apply()}.
    */
   public class Editor implements SharedPreferences.Editor {
-    private SharedPreferences.Editor mEditor;
+    private final SharedPreferences.Editor mEditor;
 
     /**
      * Constructor.

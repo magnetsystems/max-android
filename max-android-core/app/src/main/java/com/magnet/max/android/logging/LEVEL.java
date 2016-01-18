@@ -28,11 +28,11 @@ public enum  LEVEL {
   final int level;
 
   //Supress default constructor for noninstantiability
-  private LEVEL() {
+  LEVEL() {
     throw new AssertionError();
   }
 
-  private LEVEL(int level, String levelString) {
+  LEVEL(int level, String levelString) {
     this.level = level;
     this.levelString = levelString;
   }

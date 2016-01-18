@@ -22,7 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class MCPCommand<T> {
-  private static AtomicLong requestIdGenerator = new AtomicLong(0);
+  private static final AtomicLong requestIdGenerator = new AtomicLong(0);
 
   protected String name;
   protected String cid;

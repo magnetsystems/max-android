@@ -37,15 +37,15 @@ import java.util.concurrent.TimeUnit;
 public class Logger {
   private static final String TAG = Logger.class.getSimpleName();
 
-  private String category;
+  private final String category;
 
   private static final int BUFFER_SIZE = 10000;
-  private static Map<String,Logger> mmLoggerMap = new ConcurrentHashMap<>();
+  private static final Map<String,Logger> mmLoggerMap = new ConcurrentHashMap<>();
   private static final String ROOT = "ROOT";
   private static ThreadLocal<String> correlationId = new ThreadLocal<>();
 
   //small buffer before write to file.
-  private static BlockingQueue<LogEntry> logEventsQueue = new LinkedBlockingDeque<LogEntry>(BUFFER_SIZE);
+  private static final BlockingQueue<LogEntry> logEventsQueue = new LinkedBlockingDeque<LogEntry>(BUFFER_SIZE);
   private static DefaultLoggerOptions loggerOptions;
   private static WeakReference<Context> contextWeakReference;
   private static Set<LogAppender> appenders;
@@ -82,7 +82,7 @@ public class Logger {
       loggerThread = new LoggerThread("Magnet Logger- #1");
       loggerThread.start();
     }
-    if(options.isConsoleLogggingEnabled()) {
+    if(options.isConsoleLoggingEnabled()) {
       appenders.add(new AndroidLoggerAppender());
     }
   }

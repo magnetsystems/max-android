@@ -16,7 +16,7 @@
 package com.magnet.max.android.ws.mcp;
 
 public class MCPAck extends MCPEnvelope {
-  public static enum STATUS{
+  public enum STATUS{
     CONNECTED,
     DISCONNECTED,
     RECEIVED,

@@ -36,6 +36,7 @@ import com.magnet.max.android.auth.model.UserRegistrationInfo;
 import com.magnet.max.android.config.MaxAndroidConfig;
 import com.magnet.max.android.tests.R;
 import com.magnet.max.android.tests.utils.MaxAndroidJsonConfig;
+import com.magnet.max.android.tests.utils.MaxHelper;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -48,10 +49,10 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
 
   private static final int WAIT_TIME_SECONDS = 5;
 
-  private CountDownLatch onInitSignal = new CountDownLatch(1);
-  private CountDownLatch onAppTokenSignal = new CountDownLatch(1);
-  private CountDownLatch onUserTokenSignal = new CountDownLatch(1);
-  private CountDownLatch onUserTokenInvalidSignal = new CountDownLatch(1);
+  private final CountDownLatch onInitSignal = new CountDownLatch(1);
+  private final CountDownLatch onAppTokenSignal = new CountDownLatch(1);
+  private final CountDownLatch onUserTokenSignal = new CountDownLatch(1);
+  private final CountDownLatch onUserTokenInvalidSignal = new CountDownLatch(1);
   private BroadcastReceiver appTokenBroadcastReceiver;
   private BroadcastReceiver userTokenBroadcastReceiver;
 
@@ -59,9 +60,7 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
   protected void setUp() throws Exception {
     super.setUp();
 
-    MaxAndroidConfig config = new MaxAndroidJsonConfig(getContext(), R.raw.keys);
-    //magnetServiceHttpAdapter = new MagnetServiceAdapter.Builder().config(config).applicationContext(getContext()).build();
-    MaxCore.init(getContext(), config);
+    MaxHelper.initMax(getContext(), R.raw.keys);
 
     appTokenBroadcastReceiver = new BroadcastReceiver() {
       @Override public void onReceive(Context context, Intent intent) {
@@ -90,19 +89,9 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
   public void testMagnetServiceCreation() throws InterruptedException {
     MaxModule service = this;
 
-    final CountDownLatch initCallbackSignal = new CountDownLatch(1);
-    MaxCore.initModule(service, new ApiCallback<Boolean>() {
-      @Override public void success(Boolean aBoolean) {
-        initCallbackSignal.countDown();
-      }
-
-      @Override public void failure(ApiError error) {
-        initCallbackSignal.countDown();
-      }
-    });
+    MaxCore.register(service);
     assertEquals(this.getClass().getSimpleName(), service.getName());
-    initCallbackSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
-    assertEquals(0, initCallbackSignal.getCount());
+    onInitSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     assertEquals(0, onInitSignal.getCount());
 
     onAppTokenSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
@@ -288,26 +277,29 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
     onInitSignal.countDown();
   }
 
-  @Override public void onAppTokenUpdate(String s, String s1, String s2) {
+  @Override public void onAppTokenUpdate(String s, String s1, String s2, ApiCallback<Boolean> callback) {
     Log.i(TAG, "-----------onAppTokenUpdate called : " + s2);
     onAppTokenSignal.countDown();
   }
 
-  @Override public void onUserTokenUpdate(String s, String userId, String s2) {
+  @Override public void onUserTokenUpdate(String s, String userId, String s2, ApiCallback<Boolean> callback) {
     Log.i(TAG, "-----------onUserTokenUpdate called : " + s2);
     onUserTokenSignal.countDown();
+    if(null != callback) {
+      callback.success(true);
+    }
   }
 
   @Override public void onClose(boolean b) {
 
   }
 
-  @Override public void onUserTokenInvalidate() {
+  @Override public void onUserTokenInvalidate(ApiCallback<Boolean> callback) {
     Log.i(TAG, "-----------onUserTokenInvalidate called");
     onUserTokenInvalidSignal.countDown();
   }
 
-  @Override public void deInitModule() {
+  @Override public void deInitModule(ApiCallback<Boolean> callback) {
     Log.i(TAG, "-----------deInitModule called");
   }
 

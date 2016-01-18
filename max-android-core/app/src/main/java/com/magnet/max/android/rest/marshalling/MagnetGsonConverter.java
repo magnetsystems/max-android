@@ -234,8 +234,7 @@ public class MagnetGsonConverter<T> implements Converter<T> {
         stringWriter.write(charBuffer.array(), 0, length);
       }
 
-      String s = stringWriter.toString();
-      return s;
+      return stringWriter.toString();
     } catch (IOException e) {
       Log.e(TAG, "Failed to read InputStreamReader to string due to \n" + e.getMessage());
     }

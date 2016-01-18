@@ -17,12 +17,14 @@ package com.magnet.max.android.tests;
 
 import android.test.AndroidTestCase;
 import android.test.suitebuilder.annotation.MediumTest;
+import android.util.Log;
 import com.google.gson.Gson;
 import com.magnet.max.android.MaxCore;
 import com.magnet.max.android.config.MaxAndroidConfig;
 import com.magnet.max.android.logging.EventLog;
 import com.magnet.max.android.logging.remote.LogEventsCollectionService;
 import com.magnet.max.android.tests.utils.MaxAndroidJsonConfig;
+import com.magnet.max.android.tests.utils.MaxHelper;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.RequestBody;
 import java.util.concurrent.CountDownLatch;
@@ -31,38 +33,14 @@ import java.util.concurrent.TimeUnit;
 public class EventsCollectionTestLog extends AndroidTestCase {
   private static final String TAG = EventsCollectionTestLog.class.getSimpleName();
 
-  //GenyMotion
-  private static final String SERVER_PORT = "10.0.3.2:8443";
-  //private static final String SERVER_PORT = "192.168.101.135:8443";
+  private static boolean isMaxInited = false;
 
   @Override
   protected void setUp() throws Exception {
-    super.setUp();
-
-    //MagnetAndroidConfig config = new MagnetAndroidConfig() {
-    //  @Override public String getBaseUrl() {
-    //    return "http://10.0.3.2:8443";
-    //  }
-    //
-    //  @Override public String getClientId() {
-    //    return "73728e03-c3ee-457a-a06a-4e59c765eedd";
-    //  }
-    //
-    //  @Override public String getClientSecret() {
-    //    return "Wu0vLi0YzkurLj8mVng7S2f8kJXSaC3Z5En8J6M3kM8";
-    //  }
-    //
-    //  @Override public String getScope() {
-    //    return null;
-    //  }
-    //
-    //  @Override public Map<String, String> getAllConfigs() {
-    //    return null;
-    //  }
-    //};
-
-    MaxAndroidConfig config = new MaxAndroidJsonConfig(getContext(), R.raw.keys);
-    MaxCore.init(getContext(), config);
+    if(!isMaxInited) {
+      MaxHelper.initMax(getContext(), R.raw.keys);
+      isMaxInited = true;
+    }
   }
 
   //@MediumTest
@@ -128,9 +106,10 @@ public class EventsCollectionTestLog extends AndroidTestCase {
     }).executeInBackground();
 
     try {
-      signal.await(5, TimeUnit.SECONDS);
+      signal.await(10, TimeUnit.SECONDS);
     } catch (Throwable e) {
-      e.printStackTrace();
+      Log.e(TAG, "addEventsFromFile timeout");
+      fail("addEventsFromFile timeout");
     }
 
     assertEquals(0, signal.getCount());
