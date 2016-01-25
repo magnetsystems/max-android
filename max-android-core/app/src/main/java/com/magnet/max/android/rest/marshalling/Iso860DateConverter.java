@@ -16,6 +16,7 @@
 package com.magnet.max.android.rest.marshalling;
 
 import android.util.Log;
+import com.magnet.max.android.util.StringUtil;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -30,10 +31,12 @@ public class Iso860DateConverter {
   }
 
   public static Date fromString(String dateStr) {
-    try {
-      return dateFormat.parse(dateStr);
-    } catch (ParseException e) {
-      Log.e("Iso860DateConverter", "Failed to parse date " + dateStr + " due to \n" + e.getMessage());
+    if(StringUtil.isNotEmpty(dateStr)) {
+      try {
+        return dateFormat.parse(dateStr);
+      } catch (ParseException e) {
+        Log.e("Iso860DateConverter", "Failed to parse date " + dateStr + " due to \n" + e.getMessage());
+      }
     }
 
     return null;
