@@ -41,11 +41,9 @@ import retrofit.Response;
  * The User class is a local representation of a user in the MagnetMax platform.
  * This class provides various user specific methods, like authentication, signing up, and search.
  */
-final public class User implements Parcelable {
+final public class User extends UserProfile {
   private static final String TAG = "User";
 
-  @SerializedName("userIdentifier")
-  private String mUserIdentifier;
   @SerializedName("email")
   private String mEmail;
   @SerializedName("roles")
@@ -56,10 +54,6 @@ final public class User implements Parcelable {
   private String mUserName;
   @SerializedName("userRealm")
   private UserRealm mUserRealm;
-  @SerializedName("firstName")
-  private String mFirstName;
-  @SerializedName("lastName")
-  private String mLastName;
   @SerializedName("tags")
   private String[] mTags;
   @SerializedName("userAccountData")
@@ -301,13 +295,6 @@ final public class User implements Parcelable {
   }
 
   /**
-   * The unique identifer for the user.
-   */
-  public String getUserIdentifier() {
-    return mUserIdentifier;
-  }
-
-  /**
    * The email for the user.
    */
   public String getEmail() {
@@ -340,20 +327,6 @@ final public class User implements Parcelable {
    */
   public UserRealm getUserRealm() {
     return mUserRealm;
-  }
-
-  /**
-   * The firstName for the user.
-   */
-  public String getFirstName() {
-    return mFirstName;
-  }
-
-  /**
-   * The lastName for the user.
-   */
-  public String getLastName() {
-    return mLastName;
   }
 
   /**
@@ -442,13 +415,11 @@ final public class User implements Parcelable {
   }
 
   @Override public void writeToParcel(Parcel dest, int flags) {
-    dest.writeString(this.mUserIdentifier);
+    super.writeToParcel(dest, flags);
     dest.writeString(this.mEmail);
     dest.writeStringArray(this.mRoles);
     dest.writeString(this.mUserName);
     dest.writeInt(this.mUserRealm == null ? -1 : this.mUserRealm.ordinal());
-    dest.writeString(this.mFirstName);
-    dest.writeString(this.mLastName);
     dest.writeStringArray(this.mTags);
     dest.writeBundle(ParcelableHelper.stringMapToBundle(this.mExtras));
   }
@@ -458,13 +429,13 @@ final public class User implements Parcelable {
 
   protected User(Parcel in) {
     this.mUserIdentifier = in.readString();
+    this.mFirstName = in.readString();
+    this.mLastName = in.readString();
     this.mEmail = in.readString();
     this.mRoles = in.createStringArray();
     this.mUserName = in.readString();
     int tmpMUserRealm = in.readInt();
     this.mUserRealm = tmpMUserRealm == -1 ? null : UserRealm.values()[tmpMUserRealm];
-    this.mFirstName = in.readString();
-    this.mLastName = in.readString();
     this.mTags = in.createStringArray();
     this.mExtras = ParcelableHelper.stringMapfromBundle(in.readBundle(getClass().getClassLoader()));
   }
