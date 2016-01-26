@@ -458,6 +458,7 @@ import java.util.concurrent.atomic.AtomicReference;
         editor.putString(KEY_USER, gson.toJson(user));
       } else {
         editor.remove(KEY_USER);
+        editor.remove(KEY_REMEMBER_ME);
       }
       editor.apply();
     }
