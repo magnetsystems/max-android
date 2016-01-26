@@ -191,6 +191,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
       if(rememberMe) {
         tokenLocalStore.saveUserToken();
+        tokenLocalStore.saveUser(User.getCurrentUser());
       }
 
       tokenLocalStore.saveRememberMe(rememberMe);
@@ -225,6 +226,7 @@ import java.util.concurrent.atomic.AtomicReference;
     notifyInvalidUserTokenObservers();
 
     tokenLocalStore.saveUserToken();
+    tokenLocalStore.saveUser(null);
   }
 
   public static void onTokenInvalid(String token) {
@@ -403,6 +405,7 @@ import java.util.concurrent.atomic.AtomicReference;
     public static final String KEY_APP_TOKEN = "appToken";
     public static final String KEY_USER_ID = "userId";
     public static final String KEY_USER_TOKEN = "userToken";
+    public static final String KEY_USER = "user";
     public static final String KEY_SERVER_CONFIGS = "serverConfigs";
     public static final String KEY_REMEMBER_ME = "rememberMe";
 
@@ -447,6 +450,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
       //Log.d(TAG, "-------------updating userName = " + userIdRef.get());
       //Log.d(TAG, "-------------updating userToken = " + userTokenRef.get().getAccessToken());
+    }
+
+    public void saveUser(User user) {
+      SharedPreferences.Editor editor = credentialStore.edit();
+      if(null != user) {
+        editor.putString(KEY_USER, gson.toJson(user));
+      } else {
+        editor.remove(KEY_USER);
+      }
+      editor.apply();
     }
 
     public void saveRememberMe(boolean rememberMe) {
@@ -502,6 +515,11 @@ import java.util.concurrent.atomic.AtomicReference;
           //        .getAccessToken());
 
           notifyUserTokenObservers(null);
+        }
+
+        String userJson = credentialStore.getString(KEY_USER, null);
+        if (null != userJson) {
+          User.setCurrentUser(gson.fromJson(userJson, User.class));
         }
       }
     }

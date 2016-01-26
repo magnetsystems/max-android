@@ -260,6 +260,14 @@ final public class User extends UserProfile {
   }
 
   /**
+   * Only use internally for rememberme
+   * @param user
+   */
+  static void setCurrentUser(User user) {
+    sCurrentUserRef.set(user);
+  }
+
+  /**
    * Get the id of currently login user
    * @return
    */
