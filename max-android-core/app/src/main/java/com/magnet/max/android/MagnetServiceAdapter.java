@@ -85,7 +85,7 @@ import retrofit.Response;
     // Check if cached token is valid
     final ApplicationToken applicationTokenCache = ModuleManager.getApplicationToken();
     if (null != applicationTokenCache && !applicationTokenCache.isAboutToExpireInMinutes(30)
-        && config.getClientId().equals(ModuleManager.getServerConfigs().get(MaxAndroidPropertiesConfig.PROP_CLIENT_ID))) {
+        && config.getClientId().equals(ModuleManager.getCachedServerConfigs().get(MaxAndroidPropertiesConfig.PROP_CLIENT_ID))) {
       Log.i(TAG, "Using cached application token");
 
       applicationService.getMobileConfig(new Callback<Map<String, String>>() {

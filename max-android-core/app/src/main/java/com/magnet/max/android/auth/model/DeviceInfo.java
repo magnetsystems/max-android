@@ -20,6 +20,7 @@ import com.magnet.max.android.Device;
 import com.magnet.max.android.MaxCore;
 import com.magnet.max.android.User;
 import com.magnet.max.android.util.DeviceUtil;
+import com.magnet.max.android.util.StringUtil;
 
 /**
  * This class is used to create a device
@@ -117,7 +118,9 @@ public class DeviceInfo {
       toBuild.os = OsType.ANDROID;
       toBuild.osVersion = android.os.Build.VERSION.RELEASE;
       toBuild.pushAuthority = PushAuthorityType.GCM;
-      toBuild.label = Build.MANUFACTURER + " "+ Build.MODEL;
+      if(StringUtil.isEmpty(toBuild.getLabel())) {
+        toBuild.label = Build.MANUFACTURER + " " + Build.MODEL;
+      }
       toBuild.deviceStatus = DeviceStatus.ACTIVE;
       toBuild.userId = User.getCurrentUserId();
       return toBuild;

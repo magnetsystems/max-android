@@ -20,6 +20,7 @@ import android.util.Log;
 import com.magnet.max.android.config.MaxAndroidConfig;
 import com.magnet.max.android.connectivity.ConnectivityManager;
 import com.magnet.max.android.rest.SystemDataStore;
+import com.magnet.max.android.util.MagnetUtils;
 import com.magnet.max.android.util.StringUtil;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,8 +45,12 @@ final public class MaxCore {
     if(null == context) {
       throw new IllegalArgumentException("applicationContext shouldn't be null");
     }
+    if(null == config) {
+      throw new IllegalArgumentException("MaxAndroidConfig shouldn't be null");
+    }
 
-    if(mIsInited.get() && context.getApplicationContext().equals(mApplicationContext)&& isConfigEqual(config)) {
+    if(mIsInited.get() && context.getApplicationContext().equals(mApplicationContext)
+        && MagnetUtils.isMapEquals(mConfig.getAllConfigs(), config.getAllConfigs())) {
       String message = "MaxCore has been already inited with same config";
       Log.w(TAG, "------" + message);
       throw new IllegalStateException(message);
