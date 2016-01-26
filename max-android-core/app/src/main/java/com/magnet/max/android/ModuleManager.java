@@ -22,10 +22,12 @@ import android.util.Log;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.magnet.max.android.auth.model.ApplicationToken;
+import com.magnet.max.android.auth.model.BaseToken;
 import com.magnet.max.android.auth.model.DeviceInfo;
 import com.magnet.max.android.auth.model.UserToken;
 import com.magnet.max.android.util.EqualityUtil;
 import com.magnet.max.android.util.HashCodeBuilder;
+import com.magnet.max.android.util.MagnetUtils;
 import com.magnet.max.android.util.SecurePreferences;
 import com.magnet.max.android.util.StringUtil;
 import java.util.ArrayList;
@@ -35,6 +37,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**public**/ class ModuleManager {
@@ -45,7 +48,9 @@ import java.util.concurrent.atomic.AtomicReference;
   private volatile static AtomicReference<ApplicationToken> appTokenRef = new AtomicReference<ApplicationToken>(null);
   private volatile static AtomicReference<UserToken> userTokenRef = new AtomicReference<UserToken>(null);
   private volatile static AtomicReference<String> userIdRef = new AtomicReference<String>(null);
+  private volatile static AtomicBoolean toRememberMeRef = new AtomicBoolean(false);
   private volatile static AtomicReference<Map<String, String>> serverConfigsRef = new AtomicReference<>(null);
+  private static Map<String, String> cachedServerConfig = new HashMap<>();
 
   private static TokenLocalStore tokenLocalStore;
 
@@ -152,16 +157,18 @@ import java.util.concurrent.atomic.AtomicReference;
   public static void onAppLogin(String appId, ApplicationToken appToken,
       Map<String, String> serverConfig) {
     if(null != appToken) {
+      boolean isSameToken = isTokenSame(null, appTokenRef.get(), null, appToken);
       appTokenRef.set(appToken);
-
-      notifyAppTokenObservers();
+      if(!isSameToken) {
+        notifyAppTokenObservers();
+      } else {
+        Log.d(TAG, "App token is the same, won't notifyAppTokenObservers");
+      }
 
       tokenLocalStore.saveAppToken();
     }
 
     onServerConfig(serverConfig);
-
-    notifyConfigObservers();
   }
 
   public static void onAppLogout(final String appId) {
@@ -180,6 +187,9 @@ import java.util.concurrent.atomic.AtomicReference;
     boolean isCallbackCalled = false;
     if(null != token) {
       Log.i(TAG, "userLogin success : ");
+      boolean isSameToken = isTokenSame(userIdRef.get(), userTokenRef.get(), userId, token);
+
+      toRememberMeRef.set(rememberMe);
 
       userTokenRef.set(token);
 
@@ -210,7 +220,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
       notifyUserTokenObservers(null);
 
-      tokenLocalStore.saveUserToken();
+      if(toRememberMeRef.get()) {
+        tokenLocalStore.saveUserToken();
+      }
     } else {
 
     }
@@ -225,8 +237,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
     notifyInvalidUserTokenObservers();
 
-    tokenLocalStore.saveUserToken();
-    tokenLocalStore.saveUser(null);
+    if(toRememberMeRef.get()) {
+      tokenLocalStore.saveUserToken();
+      tokenLocalStore.saveUser(null);
+    }
   }
 
   public static void onTokenInvalid(String token) {
@@ -254,8 +268,11 @@ import java.util.concurrent.atomic.AtomicReference;
   }
 
   private static void onServerConfig(Map<String, String> serverConfigs) {
-    refreshServerConfigs(serverConfigs);
-    tokenLocalStore.saveServerConfigs();
+    if(!MagnetUtils.isMapContainedIn(serverConfigs, serverConfigsRef.get())) {
+      refreshServerConfigs(serverConfigs);
+      tokenLocalStore.saveServerConfigs();
+    }
+    notifyConfigObservers();
   }
 
   public static ApplicationToken getApplicationToken() {
@@ -268,6 +285,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
   public static Map<String, String> getServerConfigs() {
     return serverConfigsRef.get();
+  }
+
+  public static Map<String, String> getCachedServerConfigs() {
+    return cachedServerConfig;
   }
 
   /**
@@ -364,6 +385,22 @@ import java.util.concurrent.atomic.AtomicReference;
       }
       serverConfigsRef.get().putAll(newConfigs);
     }
+  }
+
+  private static boolean isTokenSame(String oldId, BaseToken oldToken, String newId, BaseToken newToken) {
+    return !StringUtil.isStringValueEqual(oldId, newId) && isTokenEquals(oldToken, newToken);
+  }
+
+  private static boolean isTokenEquals(BaseToken token1, BaseToken token2) {
+    if(null == token1) {
+      return null == token2;
+    }
+
+    if(null == token2) {
+      return null == token1;
+    }
+
+    return StringUtil.isStringValueEqual(token1.getAccessToken(), token2.getAccessToken());
   }
 
   private static class ModuleInfo {
@@ -483,29 +520,37 @@ import java.util.concurrent.atomic.AtomicReference;
     }
 
     public void loadCredentials() {
+      Log.d(TAG, "-------------Loading from local cache------------- ");
       String appTokenJson = credentialStore.getString(KEY_APP_TOKEN, null);
       if (null != appTokenJson) {
         ApplicationToken applicationToken = gson.fromJson(appTokenJson, ApplicationToken.class);
         if(!applicationToken.isExpired()) {
           appTokenRef.set(applicationToken);
 
-          //Log.d(TAG, "-------------credentials reloaded from local appToken = " + appTokenRef.get()
-          //    .getAccessToken());
+          Log.d(TAG, "-------------app token reloaded from local ");
 
           notifyAppTokenObservers();
         } else {
           Log.d(TAG, "Cached app token expired");
         }
+      } else {
+        Log.d(TAG, "-------------app token couldn't be reloaded from local ");
       }
 
       String serverConfigsJson = credentialStore.getString(KEY_SERVER_CONFIGS, null);
       if(null != serverConfigsJson) {
         serverConfigsRef.set((Map<String, String>) gson.fromJson(serverConfigsJson, new TypeToken<Map<String, String>>(){}.getType()));
+        cachedServerConfig.putAll(serverConfigsRef.get());
+
+        Log.d(TAG, "-------------server config reloaded from local : " + serverConfigsRef.get());
+      } else {
+        Log.d(TAG, "-------------server config couldn't be reloaded from local");
       }
 
-      if(credentialStore.getBoolean(KEY_REMEMBER_ME, false)) {
+      boolean toRememberMe = credentialStore.getBoolean(KEY_REMEMBER_ME, false);
+      if(toRememberMe) {
         userIdRef.set(credentialStore.getString(KEY_USER_ID, null));
-        Log.d(TAG, "-------------credentials reloaded from local, userName = " + userIdRef.get());
+        Log.d(TAG, "-------------rememberMe enabled, credentials reloaded from local, userName = " + userIdRef.get());
         String userTokenJson = credentialStore.getString(KEY_USER_TOKEN, null);
         if (null != userTokenJson) {
 
@@ -520,9 +565,15 @@ import java.util.concurrent.atomic.AtomicReference;
 
         String userJson = credentialStore.getString(KEY_USER, null);
         if (null != userJson) {
+          Log.d(TAG, "CurrentUser loaded from local cache");
           User.setCurrentUser(gson.fromJson(userJson, User.class));
+        } else {
+          Log.d(TAG, "CurrentUser couldn't be loaded from local cache");
         }
+      } else {
+        Log.d(TAG, "-------------rememberMe disabled");
       }
+      toRememberMeRef.set(toRememberMe);
     }
   }
 
