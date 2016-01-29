@@ -171,8 +171,6 @@ final public class Attachment implements Parcelable {
 
   private transient Map<String, String> metaData;
 
-  protected transient AttachmentService attachmentService;
-
   /**
    * Create from a {@link File}
    * @param content
@@ -608,11 +606,7 @@ final public class Attachment implements Parcelable {
   }
 
   protected AttachmentService getAttachmentService() {
-    if(null == attachmentService) {
-      attachmentService = MaxCore.create(AttachmentService.class);
-    }
-
-    return attachmentService;
+    return MaxCore.create(AttachmentService.class);
   }
 
   protected byte[] convertToBytes() {

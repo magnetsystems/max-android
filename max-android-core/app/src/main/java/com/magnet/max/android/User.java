@@ -351,13 +351,8 @@ final public class User extends UserProfile {
     return mExtras;
   }
 
-  //TODO : synchronization ?
   private static UserService getUserService() {
-    if(null == sUserService) {
-      sUserService = MaxCore.create(UserService.class);
-    }
-
-    return sUserService;
+    return MaxCore.create(UserService.class);
   }
 
   /**
