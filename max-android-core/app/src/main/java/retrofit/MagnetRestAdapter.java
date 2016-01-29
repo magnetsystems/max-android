@@ -134,6 +134,7 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
 
   private MagnetRestAdapter(OkHttpClient client, BaseUrl baseUrl, List<Converter.Factory> converterFactories,
       /*List<CallAdapter.Factory> adapterFactories,*/ Executor callbackExecutor) {
+    Log.d(TAG, "MagnetRestAdapter is created");
     this.client = client;
     this.baseUrl = baseUrl;
     this.converterFactories = converterFactories;

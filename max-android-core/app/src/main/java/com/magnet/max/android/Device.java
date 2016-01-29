@@ -95,10 +95,7 @@ public class Device implements Parcelable {
   }
 
   private static DeviceService getDeviceService() {
-    if(null == sDeviceService) {
-      sDeviceService = MaxCore.create(DeviceService.class);
-    }
-    return sDeviceService;
+    return MaxCore.create(DeviceService.class);
   }
 
   /**

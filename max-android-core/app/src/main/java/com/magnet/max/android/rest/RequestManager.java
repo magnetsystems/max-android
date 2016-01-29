@@ -51,6 +51,8 @@ public class RequestManager implements ConnectivityListener {
   //private final Context applicationContext;
 
   public RequestManager(OkHttpClient client) {
+    Log.d(TAG, "RequestManager is created, pendingCallsWaitingForToken : " + System.identityHashCode(pendingCallsWaitingForToken));
+
     this.client = client;
     //this.applicationContext = applicationContext;
 
@@ -170,7 +172,9 @@ public class RequestManager implements ConnectivityListener {
   }
 
   private void logQueueSize() {
-    Log.d(TAG, "There is " + pendingCallsWaitingForToken.size() + " pending requests in the queue " + pendingCallsWaitingForToken);
+    Log.d(TAG, "There is " + pendingCallsWaitingForToken.size() + " pending requests in the queue "
+        +  System.identityHashCode(pendingCallsWaitingForToken) + " : "
+        + pendingCallsWaitingForToken);
   }
 
   private static class RequestInfo {
