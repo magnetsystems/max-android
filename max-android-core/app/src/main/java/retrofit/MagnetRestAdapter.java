@@ -179,7 +179,8 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
     mAppToken.set(appToken);
     mDeviceId.set(deviceId);
 
-    if(isEmptyBeforeUpdate) {
+    if(isEmptyBeforeUpdate && StringUtil.isNotEmpty(appToken)) {
+      Log.i(TAG, "app token become available, sending pending queue");
       requestManager.resendPendingCallsForToken();
     }
 

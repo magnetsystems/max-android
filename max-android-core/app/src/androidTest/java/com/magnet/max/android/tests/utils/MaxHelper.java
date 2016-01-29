@@ -24,10 +24,14 @@ public class MaxHelper {
   public static void initMax(Context context, int configResourceId) {
     MaxAndroidConfig
         config = new MaxAndroidJsonConfig(context, configResourceId);
+    initMax(context, config);
+  }
+
+  public static void initMax(Context context, MaxAndroidConfig config) {
     try {
       MaxCore.init(context, config);
     } catch (IllegalStateException e) {
-      
+
     }
   }
 }
