@@ -85,7 +85,7 @@ import retrofit.Response;
     // Check if cached token is valid
     final ApplicationToken applicationTokenCache = ModuleManager.getApplicationToken();
     if (null != applicationTokenCache && !applicationTokenCache.isAboutToExpireInMinutes(30)
-        && config.getClientId().equals(ModuleManager.getCachedServerConfigs().get(MaxAndroidPropertiesConfig.PROP_CLIENT_ID))) {
+        && isSameApp()) {
       Log.i(TAG, "Using cached application token");
 
       applicationService.getMobileConfig(new Callback<Map<String, String>>() {
@@ -115,7 +115,10 @@ import retrofit.Response;
       }).executeInBackground();
     } else {
       // Reset app token
-      ModuleManager.onAppLogout(config.getClientId());
+      if(null != ModuleManager.getApplicationToken()) {
+        Log.d(TAG, "Another token was used, logout first");
+        ModuleManager.onAppLogout(config.getClientId());
+      }
 
       String authHeader = AuthUtil.generateBasicAuthToken(config.getClientId(), config.getClientSecret());
       MagnetCall<AppLoginWithDeviceResponse> call =
@@ -146,6 +149,17 @@ import retrofit.Response;
               });
       call.executeInBackground();
     }
+  }
+
+  private boolean isSameApp() {
+    boolean result = config.getClientId().equals(
+        ModuleManager.getCachedServerConfigs().get(MaxAndroidPropertiesConfig.PROP_CLIENT_ID))
+        && config.getClientSecret().equals(
+        ModuleManager.getCachedServerConfigs().get(MaxAndroidPropertiesConfig.PROP_CLIENT_SECRET));
+    if(!result) {
+      Log.d(TAG, "Not same app : " + config.getClientId() + " != " + ModuleManager.getCachedServerConfigs().get(MaxAndroidPropertiesConfig.PROP_CLIENT_ID));
+    }
+    return result;
   }
 
   /**

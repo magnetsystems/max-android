@@ -20,11 +20,15 @@ import android.test.suitebuilder.annotation.MediumTest;
 import android.test.suitebuilder.annotation.Suppress;
 import android.util.Log;
 import com.magnet.max.android.MaxCore;
+import com.magnet.max.android.config.MaxAndroidConfig;
+import com.magnet.max.android.config.MaxAndroidPropertiesConfig;
 import com.magnet.max.android.rest.CacheOptions;
 import com.magnet.max.android.tests.testsubjects.PrimitiveTypeService;
 import com.magnet.max.android.tests.testsubjects.model.ModelWithAllTypes;
 import com.magnet.max.android.tests.utils.MaxAndroidJsonConfig;
 import com.magnet.max.android.tests.utils.MaxHelper;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import retrofit.MagnetCall;
@@ -32,9 +36,6 @@ import retrofit.MagnetRestAdapter;
 
 public class QoSTest extends ApplicationTestCase<TestApplication> {
   private static final String TAG = QoSTest.class.getSimpleName();
-
-  //GenyMotion
-  private static final String SERVER_PORT = "10.0.3.2:8443/api";
 
   private static MagnetRestAdapter magnetServiceHttpAdapter;
   private static PrimitiveTypeService myService;
@@ -148,7 +149,35 @@ public class QoSTest extends ApplicationTestCase<TestApplication> {
         fail(e.getMessage());
       }
 
-      MaxHelper.initMax(getContext(), R.raw.keys);
+      final MaxAndroidConfig config = new MaxAndroidJsonConfig(getContext(), R.raw.keys);
+      MaxHelper.initMax(getContext(), new MaxAndroidConfig() {
+        Map<String, String> allMap;
+
+        @Override public String getBaseUrl() {
+          return config.getBaseUrl();
+        }
+
+        @Override public String getClientId() {
+          return null;
+        }
+
+        @Override public String getClientSecret() {
+          return null;
+        }
+
+        @Override public String getScope() {
+          return null;
+        }
+
+        @Override public Map<String, String> getAllConfigs() {
+          if(null == allMap) {
+            allMap = new HashMap<String, String>();
+            allMap.put(MaxAndroidPropertiesConfig.PROP_BASE_URL, config.getBaseUrl());
+          }
+
+          return allMap;
+        }
+      });
       //magnetServiceHttpAdapter = new MagnetRestAdapter.Builder().baseUrl("http://" + SERVER_PORT).build();
       myService = MaxCore.create(PrimitiveTypeService.class);
     }

@@ -62,6 +62,10 @@ public class MagnetUtils {
       return null == map2;
     }
 
+    if(null == map2) {
+      return null == map1;
+    }
+
     if(map1.size() != map2.size()) {
       return false;
     }

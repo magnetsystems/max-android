@@ -45,8 +45,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class PrimitiveTypeServiceTest extends AndroidTestCase {
 
-  public static final String SERVER_HOST_AND_PORT = "10.0.3.2:8443/api";
-
   protected abstract PrimitiveTypeService getPrimitiveTypeService();
 
   @Override

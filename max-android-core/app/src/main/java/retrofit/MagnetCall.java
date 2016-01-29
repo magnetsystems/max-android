@@ -15,6 +15,7 @@
  */
 package retrofit;
 
+import android.util.Log;
 import com.magnet.max.android.auth.AuthTokenProvider;
 import com.magnet.max.android.connectivity.ConnectivityManager;
 import com.magnet.max.android.rest.CacheOptions;
@@ -105,6 +106,7 @@ public class MagnetCall<T> {
     if(isCallReady(request, options)) {
       call.enqueue(callbackInMainThread);
     } else {
+      Log.i(TAG, "Request " + request.urlString() + " is not ready, added into pending queue");
       requestManager.savePendingCall(call, callbackInMainThread, options);
     }
   }

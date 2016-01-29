@@ -43,43 +43,43 @@ import java.util.concurrent.atomic.AtomicReference;
 /**public**/ class ModuleManager {
   private static final String TAG = ModuleManager.class.getSimpleName();
 
-  private static Map<String, Set<ModuleInfo>> registeredModules = new HashMap<>();
+  private static Map<String, Set<ModuleInfo>> mRegisteredModules = new HashMap<>();
 
-  private volatile static AtomicReference<ApplicationToken> appTokenRef = new AtomicReference<ApplicationToken>(null);
-  private volatile static AtomicReference<UserToken> userTokenRef = new AtomicReference<UserToken>(null);
-  private volatile static AtomicReference<String> userIdRef = new AtomicReference<String>(null);
-  private volatile static AtomicBoolean toRememberMeRef = new AtomicBoolean(false);
-  private volatile static AtomicReference<Map<String, String>> serverConfigsRef = new AtomicReference<>(null);
-  private static Map<String, String> cachedServerConfig = new HashMap<>();
+  private volatile static AtomicReference<ApplicationToken> mAppTokenRef = new AtomicReference<ApplicationToken>(null);
+  private volatile static AtomicReference<UserToken> mUserTokenRef = new AtomicReference<UserToken>(null);
+  private volatile static AtomicReference<String> mUserIdRef = new AtomicReference<String>(null);
+  private volatile static AtomicBoolean mToRememberMeRef = new AtomicBoolean(false);
+  private volatile static AtomicReference<Map<String, String>> mServerConfigsRef = new AtomicReference<>(null);
+  private static Map<String, String> mCachedServerConfig = new HashMap<>();
 
-  private static TokenLocalStore tokenLocalStore;
+  private static TokenLocalStore mTokenLocalStore;
 
   public static synchronized void init() {
     Log.i(TAG, "-----------ModuleManager init");
 
-    if(null == tokenLocalStore) {
-      tokenLocalStore = new TokenLocalStore();
-      tokenLocalStore.loadCredentials();
+    if(null == mTokenLocalStore) {
+      mTokenLocalStore = new TokenLocalStore();
+      mTokenLocalStore.loadCredentials();
     }
 
-    if(null == serverConfigsRef.get()) {
-      serverConfigsRef.set(MaxCore.getConfig().getAllConfigs());
+    if(null == mServerConfigsRef.get()) {
+      mServerConfigsRef.set(MaxCore.getConfig().getAllConfigs());
     } else {
-      serverConfigsRef.get().putAll(MaxCore.getConfig().getAllConfigs());
+      mServerConfigsRef.get().putAll(MaxCore.getConfig().getAllConfigs());
     }
 
-    //if(null != appTokenRef.get()) {
+    //if(null != mAppTokenRef.get()) {
     //  onAppLogout(MaxCore.getConfig().getClientId());
     //}
     //
-    //if(null != userTokenRef.get()) {
+    //if(null != mUserTokenRef.get()) {
     //  onUserLogout(User.getCurrentUserId());
     //}
 
-    if(null == registeredModules) {
-      registeredModules = new HashMap<>();
+    if(null == mRegisteredModules) {
+      mRegisteredModules = new HashMap<>();
     } else {
-      registeredModules.clear();
+      mRegisteredModules.clear();
     }
   }
 
@@ -87,7 +87,7 @@ import java.util.concurrent.atomic.AtomicReference;
     for(ModuleInfo s : getAllRegisteredModules()) {
       s.getModule().deInitModule(null);
     }
-    registeredModules.clear();
+    mRegisteredModules.clear();
   }
 
   public static synchronized void register(MaxModule module, ApiCallback<Boolean> callback) {
@@ -98,7 +98,7 @@ import java.util.concurrent.atomic.AtomicReference;
     Log.d(TAG, "--------registering module " + module.getName() + " : " + module + "\n" + getAllRegisteredModules());
 
     boolean registered = true;
-    Set<ModuleInfo> existingModules = registeredModules.get(module.getName());
+    Set<ModuleInfo> existingModules = mRegisteredModules.get(module.getName());
     ModuleInfo moduleInfo = new ModuleInfo(module, callback);
     if(null != existingModules) {
       if(!existingModules.contains(module)) {
@@ -110,20 +110,21 @@ import java.util.concurrent.atomic.AtomicReference;
     } else {
       Set<ModuleInfo> moduleInfos = new HashSet<>();
       moduleInfos.add(moduleInfo);
-      registeredModules.put(module.getName(), moduleInfos);
+      mRegisteredModules.put(module.getName(), moduleInfos);
     }
 
     if(registered) {
-      if (appTokenRef.get() != null) {
-        Log.d(TAG, "--------appToken is available when register : " + appTokenRef.get());
-        Log.d(TAG, "--------configs is available when register : " + Arrays.toString(serverConfigsRef.get().entrySet().toArray()));
-        module.onInit(MaxCore.getApplicationContext(), serverConfigsRef.get(), callback);
-        module.onAppTokenUpdate(appTokenRef.get().getAccessToken(), appTokenRef.get().getMmxAppId(),
+      if (mAppTokenRef.get() != null) {
+        Log.d(TAG, "--------appToken is available when register : " + mAppTokenRef.get());
+        Log.d(TAG, "--------configs is available when register : " + Arrays.toString(
+            mServerConfigsRef.get().entrySet().toArray()));
+        module.onInit(MaxCore.getApplicationContext(), mServerConfigsRef.get(), callback);
+        module.onAppTokenUpdate(mAppTokenRef.get().getAccessToken(), mAppTokenRef.get().getMmxAppId(),
             Device.getCurrentDeviceId(), callback);
       }
-      if (userTokenRef.get() != null) {
-        Log.d(TAG, "--------userToken is availabe when register : " + userTokenRef.get());
-        module.onUserTokenUpdate(userTokenRef.get().getAccessToken(), userIdRef.get(), Device.getCurrentDeviceId(), callback);
+      if (mUserTokenRef.get() != null) {
+        Log.d(TAG, "--------userToken is availabe when register : " + mUserTokenRef.get());
+        module.onUserTokenUpdate(mUserTokenRef.get().getAccessToken(), mUserIdRef.get(), Device.getCurrentDeviceId(), callback);
       }
     }
   }
@@ -135,7 +136,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
     Log.d(TAG, "--------deRegister module " + module.getName() + " : " + module);
 
-    Set<ModuleInfo> existingModules = registeredModules.get(module.getName());
+    Set<ModuleInfo> existingModules = mRegisteredModules.get(module.getName());
     if(null != existingModules && existingModules.contains(module)) {
       existingModules.remove(module);
       module.deInitModule(null);
@@ -157,15 +158,20 @@ import java.util.concurrent.atomic.AtomicReference;
   public static void onAppLogin(String appId, ApplicationToken appToken,
       Map<String, String> serverConfig) {
     if(null != appToken) {
-      boolean isSameToken = isTokenSame(null, appTokenRef.get(), null, appToken);
-      appTokenRef.set(appToken);
-      if(!isSameToken) {
-        notifyAppTokenObservers();
-      } else {
-        Log.d(TAG, "App token is the same, won't notifyAppTokenObservers");
-      }
+      //boolean isSameToken = isTokenSame(null, mAppTokenRef.get(), null, appToken);
+      //mAppTokenRef.set(appToken);
+      //if(!isSameToken) {
+      //  notifyAppTokenObservers();
+      //} else {
+      //  Log.d(TAG, "App token is the same, won't notifyAppTokenObservers");
+      //}
+      //
+      //mTokenLocalStore.updateAppToken();
+      mAppTokenRef.set(appToken);
 
-      tokenLocalStore.saveAppToken();
+      notifyAppTokenObservers();
+
+      mTokenLocalStore.updateAppToken();
     }
 
     onServerConfig(serverConfig);
@@ -174,12 +180,15 @@ import java.util.concurrent.atomic.AtomicReference;
   public static void onAppLogout(final String appId) {
     Log.i(TAG, "onAppLogout  : ");
 
-    //if(null != appTokenRef.get()) {
-      appTokenRef.set(null);
+    //if(null != mAppTokenRef.get()) {
+      mAppTokenRef.set(null);
+
+      mServerConfigsRef.set(new HashMap<String, String>());
 
       notifyAppTokenObservers();
 
-      tokenLocalStore.saveAppToken();
+      mTokenLocalStore.updateAppToken();
+      mTokenLocalStore.updateServerConfigs();
     //}
   }
 
@@ -187,24 +196,19 @@ import java.util.concurrent.atomic.AtomicReference;
     boolean isCallbackCalled = false;
     if(null != token) {
       Log.i(TAG, "userLogin success : ");
-      boolean isSameToken = isTokenSame(userIdRef.get(), userTokenRef.get(), userId, token);
+      boolean isSameToken = isTokenSame(mUserIdRef.get(), mUserTokenRef.get(), userId, token);
 
-      toRememberMeRef.set(rememberMe);
+      mToRememberMeRef.set(rememberMe);
 
-      userTokenRef.set(token);
+      mUserTokenRef.set(token);
 
-      userIdRef.set(userId);
+      mUserIdRef.set(userId);
 
       isCallbackCalled = notifyUserTokenObservers(callback);
 
+      mTokenLocalStore.updateForUserLogin();
+
       registerDevice();
-
-      if(rememberMe) {
-        tokenLocalStore.saveUserToken();
-        tokenLocalStore.saveUser(User.getCurrentUser());
-      }
-
-      tokenLocalStore.saveRememberMe(rememberMe);
     }
 
     return isCallbackCalled;
@@ -214,14 +218,14 @@ import java.util.concurrent.atomic.AtomicReference;
     if(null != token) {
       Log.i(TAG, "refresh user token success : ");
 
-      userTokenRef.set(token);
+      mUserTokenRef.set(token);
 
-      userIdRef.set(userId);
+      mUserIdRef.set(userId);
 
       notifyUserTokenObservers(null);
 
-      if(toRememberMeRef.get()) {
-        tokenLocalStore.saveUserToken();
+      if(mToRememberMeRef.get()) {
+        mTokenLocalStore.updateUserToken();
       }
     } else {
 
@@ -231,23 +235,22 @@ import java.util.concurrent.atomic.AtomicReference;
   public static void onUserLogout(final String userId) {
     Log.i(TAG, "onUserLogout  : ");
 
-    userTokenRef.set(null);
+    mUserTokenRef.set(null);
 
-    userIdRef.set(null);
+    mUserIdRef.set(null);
 
     notifyInvalidUserTokenObservers();
 
-    if(toRememberMeRef.get()) {
-      tokenLocalStore.saveUserToken();
-      tokenLocalStore.saveUser(null);
-    }
+    mTokenLocalStore.updateForUserLogout();
+
+    mToRememberMeRef.set(false);
   }
 
   public static void onTokenInvalid(String token) {
-    if (null != userTokenRef.get() && StringUtil.isStringValueEqual(token, userTokenRef.get().getAccessToken())) {
+    if (null != mUserTokenRef.get() && StringUtil.isStringValueEqual(token, mUserTokenRef.get().getAccessToken())) {
       Log.w(TAG, "Auth failed, it's user token");
       onUserTokenInvalid();
-    } else if(null != appTokenRef.get() && StringUtil.isStringValueEqual(token, appTokenRef.get().getAccessToken())) {
+    } else if(null != mAppTokenRef.get() && StringUtil.isStringValueEqual(token, mAppTokenRef.get().getAccessToken())) {
       Log.w(TAG, "Auth failed, it's app token");
       onAppTokenInvalid();
     } else {
@@ -268,27 +271,27 @@ import java.util.concurrent.atomic.AtomicReference;
   }
 
   private static void onServerConfig(Map<String, String> serverConfigs) {
-    if(!MagnetUtils.isMapContainedIn(serverConfigs, serverConfigsRef.get())) {
+    if(!MagnetUtils.isMapContainedIn(serverConfigs, mServerConfigsRef.get())) {
       refreshServerConfigs(serverConfigs);
-      tokenLocalStore.saveServerConfigs();
+      mTokenLocalStore.updateServerConfigs();
     }
     notifyConfigObservers();
   }
 
   public static ApplicationToken getApplicationToken() {
-    return appTokenRef.get();
+    return mAppTokenRef.get();
   }
 
   public static UserToken getUserToken() {
-    return userTokenRef.get();
+    return mUserTokenRef.get();
   }
 
   public static Map<String, String> getServerConfigs() {
-    return serverConfigsRef.get();
+    return mServerConfigsRef.get();
   }
 
   public static Map<String, String> getCachedServerConfigs() {
-    return cachedServerConfig;
+    return mCachedServerConfig;
   }
 
   /**
@@ -312,7 +315,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
   private static List<ModuleInfo> getAllRegisteredModules() {
     List<ModuleInfo> result = new ArrayList<>();
-    for(Map.Entry<String, Set<ModuleInfo>> e : registeredModules.entrySet()) {
+    for(Map.Entry<String, Set<ModuleInfo>> e : mRegisteredModules.entrySet()) {
       Set<ModuleInfo> services = e.getValue();
       if(null != services) {
         result.addAll(services);
@@ -327,7 +330,7 @@ import java.util.concurrent.atomic.AtomicReference;
   private static void notifyConfigObservers() {
     for(ModuleInfo s : getAllRegisteredModules()) {
       Log.i(TAG, "notify onConfig for : " + s.getModule());
-      s.getModule().onInit(MaxCore.getApplicationContext(), serverConfigsRef.get(), s.getCallback());
+      s.getModule().onInit(MaxCore.getApplicationContext(), mServerConfigsRef.get(), s.getCallback());
     }
   }
 
@@ -335,7 +338,7 @@ import java.util.concurrent.atomic.AtomicReference;
     for(ModuleInfo s : getAllRegisteredModules()) {
       Log.i(TAG, "notify onAppTokenUpdate for : " + s.getModule());
       s.getModule().onAppTokenUpdate(
-          null != appTokenRef.get() ? appTokenRef.get().getAccessToken() : null,
+          null != mAppTokenRef.get() ? mAppTokenRef.get().getAccessToken() : null,
           MaxCore.getConfig().getClientId(), Device.getCurrentDeviceId(), null);
     }
   }
@@ -346,8 +349,8 @@ import java.util.concurrent.atomic.AtomicReference;
       Log.i(TAG, "notify onUserTokenUpdate for : " + s.getModule());
       s.getModule()
           .onUserTokenUpdate(
-              null != userTokenRef.get() ? userTokenRef.get().getAccessToken() : null,
-              userIdRef.get(), Device.getCurrentDeviceId(), callback);
+              null != mUserTokenRef.get() ? mUserTokenRef.get().getAccessToken() : null,
+              mUserIdRef.get(), Device.getCurrentDeviceId(), callback);
       //FIXME : assume callback is called here
       isCallbackCalled = true;
     }
@@ -376,14 +379,14 @@ import java.util.concurrent.atomic.AtomicReference;
 
   private static void refreshServerConfigs(Map<String, String> newConfigs) {
     if(null != newConfigs && !newConfigs.isEmpty()) {
-      //serverConfigsRef.get().clear();
+      //mServerConfigsRef.get().clear();
       if(null != MaxCore.getConfig().getAllConfigs()) {
-        serverConfigsRef.get().putAll(MaxCore.getConfig().getAllConfigs());
+        mServerConfigsRef.get().putAll(MaxCore.getConfig().getAllConfigs());
       }
-      if(null != appTokenRef.get()) {
-        serverConfigsRef.get().put("mmx-appId", appTokenRef.get().getMmxAppId());
+      if(null != mAppTokenRef.get()) {
+        mServerConfigsRef.get().put("mmx-appId", mAppTokenRef.get().getMmxAppId());
       }
-      serverConfigsRef.get().putAll(newConfigs);
+      mServerConfigsRef.get().putAll(newConfigs);
     }
   }
 
@@ -454,68 +457,116 @@ import java.util.concurrent.atomic.AtomicReference;
       gson = new Gson();
     }
 
-    public void saveAppToken() {
+    public void updateForUserLogin() {
+      update(null,
+          mToRememberMeRef.get() ? new AtomicReference<String>(mUserIdRef.get()) : null,
+          mToRememberMeRef.get() ? new AtomicReference<UserToken>(mUserTokenRef.get()) : null,
+          mToRememberMeRef.get() ? new AtomicReference<User>(User.getCurrentUser()) : null,
+          new AtomicReference<Boolean>(mToRememberMeRef.get()),
+          null);
+    }
+
+    public void updateForUserLogout() {
+      update(null,
+          mToRememberMeRef.get() ? new AtomicReference<String>(null) : null,
+          mToRememberMeRef.get() ? new AtomicReference<UserToken>(null) : null,
+          mToRememberMeRef.get() ? new AtomicReference<User>(null) : null,
+          new AtomicReference<Boolean>(null),
+          null);
+    }
+
+    public void updateAppToken() {
       SharedPreferences.Editor editor = credentialStore.edit();
-      if(null == appTokenRef.get()) {
+      if(null == mAppTokenRef.get()) {
         editor.remove(KEY_APP_TOKEN);
       } else {
-        //editor.putString("appToken", encryptor.encryptString(gson.toJson(appTokenRef.get())));
-        editor.putString(KEY_APP_TOKEN, gson.toJson(appTokenRef.get()));
+        //editor.putString("appToken", encryptor.encryptString(gson.toJson(mAppTokenRef.get())));
+        editor.putString(KEY_APP_TOKEN, gson.toJson(mAppTokenRef.get()));
       }
       editor.apply();
 
-      //Log.d(TAG, "-------------updating userName = " + userIdRef.get());
-      //Log.d(TAG, "-------------updating appToken = " + appTokenRef.get().getAccessToken());
+      //Log.d(TAG, "-------------updating userName = " + mUserIdRef.get());
+      //Log.d(TAG, "-------------updating appToken = " + mAppTokenRef.get().getAccessToken());
     }
 
-    public void saveUserToken() {
+    public void updateUserToken() {
       SharedPreferences.Editor editor = credentialStore.edit();
-      if(null == userIdRef.get()) {
-        editor.remove(KEY_USER_ID);
-      } else {
-        //editor.putString("userId", encryptor.encryptString(userIdRef.get()));
-        editor.putString(KEY_USER_ID, userIdRef.get());
-      }
-
-      if(null == userTokenRef.get()) {
+      if(null == mUserTokenRef.get()) {
         editor.remove(KEY_USER_TOKEN);
       } else {
-        //editor.putString("userToken", encryptor.encryptString(gson.toJson(userTokenRef.get())));
-        editor.putString(KEY_USER_TOKEN, gson.toJson(userTokenRef.get()));
+        //editor.putString("userToken", encryptor.encryptString(gson.toJson(mUserTokenRef.get())));
+        editor.putString(KEY_USER_TOKEN, gson.toJson(mUserTokenRef.get()));
       }
       editor.apply();
 
-      //Log.d(TAG, "-------------updating userName = " + userIdRef.get());
-      //Log.d(TAG, "-------------updating userToken = " + userTokenRef.get().getAccessToken());
+      //Log.d(TAG, "-------------updating userName = " + mUserIdRef.get());
+      //Log.d(TAG, "-------------updating userToken = " + mUserTokenRef.get().getAccessToken());
     }
 
-    public void saveUser(User user) {
+    public void updateServerConfigs() {
       SharedPreferences.Editor editor = credentialStore.edit();
-      if(null != user) {
-        editor.putString(KEY_USER, gson.toJson(user));
-      } else {
-        editor.remove(KEY_USER);
-        editor.remove(KEY_REMEMBER_ME);
-      }
-      editor.apply();
-    }
-
-    public void saveRememberMe(boolean rememberMe) {
-      SharedPreferences.Editor editor = credentialStore.edit();
-      editor.putBoolean(KEY_REMEMBER_ME, rememberMe);
-      editor.apply();
-
-      //Log.d(TAG, "-------------updating userName = " + userIdRef.get());
-      //Log.d(TAG, "-------------updating userToken = " + userTokenRef.get().getAccessToken());
-    }
-
-    public void saveServerConfigs() {
-      SharedPreferences.Editor editor = credentialStore.edit();
-      if(!serverConfigsRef.get().isEmpty()) {
-        editor.putString(KEY_SERVER_CONFIGS, gson.toJson(serverConfigsRef.get()));
+      if(null != mServerConfigsRef.get() && !mServerConfigsRef.get().isEmpty()) {
+        editor.putString(KEY_SERVER_CONFIGS, gson.toJson(mServerConfigsRef.get()));
       } else {
         editor.remove(KEY_SERVER_CONFIGS);
       }
+      editor.apply();
+    }
+
+    private void update(AtomicReference<ApplicationToken> applicationTokenRef,
+        AtomicReference<String> userIdRef, AtomicReference<UserToken> userTokenRef, AtomicReference<User> userRef,
+        AtomicReference<Boolean> rememberMeRef, AtomicReference<Map<String, String>> configsRef) {
+      SharedPreferences.Editor editor = credentialStore.edit();
+      if(null != applicationTokenRef) {
+        if (null == applicationTokenRef.get()) {
+          editor.remove(KEY_APP_TOKEN);
+        } else {
+          //editor.putString("appToken", encryptor.encryptString(gson.toJson(mAppTokenRef.get())));
+          editor.putString(KEY_APP_TOKEN, gson.toJson(applicationTokenRef.get()));
+        }
+      }
+
+      if(null != userIdRef) {
+        if (null == userIdRef.get()) {
+          editor.remove(KEY_USER_ID);
+        } else {
+          editor.putString(KEY_USER_ID, userIdRef.get());
+        }
+      }
+
+      if(null != userTokenRef) {
+        if (null == userTokenRef.get()) {
+          editor.remove(KEY_USER_TOKEN);
+        } else {
+          //editor.putString("userToken", encryptor.encryptString(gson.toJson(mUserTokenRef.get())));
+          editor.putString(KEY_USER_TOKEN, gson.toJson(userTokenRef.get()));
+        }
+      }
+
+      if(null != userRef) {
+        if (null != userRef.get()) {
+          editor.putString(KEY_USER, gson.toJson(userRef.get()));
+        } else {
+          editor.remove(KEY_USER);
+        }
+      }
+
+      if(null != rememberMeRef) {
+        if(null != rememberMeRef.get()) {
+          editor.putBoolean(KEY_REMEMBER_ME, rememberMeRef.get());
+        } else {
+          editor.remove(KEY_REMEMBER_ME);
+        }
+      }
+
+      if(null != configsRef) {
+        if(null != configsRef.get() && !configsRef.get().isEmpty()) {
+          editor.putString(KEY_SERVER_CONFIGS, gson.toJson(configsRef.get()));
+        } else {
+          editor.remove(KEY_SERVER_CONFIGS);
+        }
+      }
+
       editor.apply();
     }
 
@@ -525,11 +576,11 @@ import java.util.concurrent.atomic.AtomicReference;
       if (null != appTokenJson) {
         ApplicationToken applicationToken = gson.fromJson(appTokenJson, ApplicationToken.class);
         if(!applicationToken.isExpired()) {
-          appTokenRef.set(applicationToken);
+          mAppTokenRef.set(applicationToken);
 
           Log.d(TAG, "-------------app token reloaded from local ");
 
-          notifyAppTokenObservers();
+          //notifyAppTokenObservers();
         } else {
           Log.d(TAG, "Cached app token expired");
         }
@@ -539,25 +590,26 @@ import java.util.concurrent.atomic.AtomicReference;
 
       String serverConfigsJson = credentialStore.getString(KEY_SERVER_CONFIGS, null);
       if(null != serverConfigsJson) {
-        serverConfigsRef.set((Map<String, String>) gson.fromJson(serverConfigsJson, new TypeToken<Map<String, String>>(){}.getType()));
-        cachedServerConfig.putAll(serverConfigsRef.get());
+        mServerConfigsRef.set((Map<String, String>) gson.fromJson(serverConfigsJson, new TypeToken<Map<String, String>>(){}.getType()));
+        mCachedServerConfig.putAll(mServerConfigsRef.get());
 
-        Log.d(TAG, "-------------server config reloaded from local : " + serverConfigsRef.get());
+        Log.d(TAG, "-------------server config reloaded from local : " + mServerConfigsRef.get());
       } else {
         Log.d(TAG, "-------------server config couldn't be reloaded from local");
       }
 
       boolean toRememberMe = credentialStore.getBoolean(KEY_REMEMBER_ME, false);
       if(toRememberMe) {
-        userIdRef.set(credentialStore.getString(KEY_USER_ID, null));
-        Log.d(TAG, "-------------rememberMe enabled, credentials reloaded from local, userName = " + userIdRef.get());
+        mUserIdRef.set(credentialStore.getString(KEY_USER_ID, null));
+        Log.d(TAG, "-------------rememberMe enabled, credentials reloaded from local, userName = " + mUserIdRef
+            .get());
         String userTokenJson = credentialStore.getString(KEY_USER_TOKEN, null);
         if (null != userTokenJson) {
 
-          userTokenRef.set(gson.fromJson(userTokenJson, UserToken.class));
+          mUserTokenRef.set(gson.fromJson(userTokenJson, UserToken.class));
 
           //Log.d(TAG,
-          //    "-------------credentials reloaded from local userToken = " + userTokenRef.get()
+          //    "-------------credentials reloaded from local userToken = " + mUserTokenRef.get()
           //        .getAccessToken());
 
           notifyUserTokenObservers(null);
@@ -573,7 +625,7 @@ import java.util.concurrent.atomic.AtomicReference;
       } else {
         Log.d(TAG, "-------------rememberMe disabled");
       }
-      toRememberMeRef.set(toRememberMe);
+      mToRememberMeRef.set(toRememberMe);
     }
   }
 
