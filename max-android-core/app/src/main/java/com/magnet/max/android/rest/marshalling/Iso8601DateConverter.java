@@ -22,9 +22,15 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-public class Iso860DateConverter {
-  public static final String ISO8601DateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-  private static final SimpleDateFormat dateFormat = new SimpleDateFormat(ISO8601DateFormat, Locale.US);
+public class Iso8601DateConverter {
+  private static final String TAG = "Iso8601DateConverter";
+
+  public static final String ISO8601DateFormat_WITH_MS = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+  public static final int ISO8601DateFormat_WITH_MS_LENGTH = 24;
+  public static final String ISO8601DateFormat_WO_MS = "yyyy-MM-dd'T'HH:mm:ss'Z'";
+  public static final int ISO8601DateFormat_WO_MS_LENGTH = 20;
+  private static final SimpleDateFormat dateFormat = new SimpleDateFormat(ISO8601DateFormat_WITH_MS, Locale.US);
+  private static final SimpleDateFormat dateFormat_wo_ms = new SimpleDateFormat(ISO8601DateFormat_WO_MS, Locale.US);
 
   public static String toString(Date date) {
     return dateFormat.format(date);
@@ -33,9 +39,15 @@ public class Iso860DateConverter {
   public static Date fromString(String dateStr) {
     if(StringUtil.isNotEmpty(dateStr)) {
       try {
-        return dateFormat.parse(dateStr);
+        if(dateStr.length() == ISO8601DateFormat_WITH_MS_LENGTH) {
+          return dateFormat.parse(dateStr);
+        } else if(dateStr.length() == ISO8601DateFormat_WO_MS_LENGTH) {
+          return dateFormat_wo_ms.parse(dateStr);
+        } else {
+          Log.e(TAG, "Date string format is not supported : " + dateStr);
+        }
       } catch (ParseException e) {
-        Log.e("Iso860DateConverter", "Failed to parse date " + dateStr + " due to \n" + e.getMessage());
+        Log.e(TAG, "Failed to parse date " + dateStr + " due to \n" + e.getMessage());
       }
     }
 

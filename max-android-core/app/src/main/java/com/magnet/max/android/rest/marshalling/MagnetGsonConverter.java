@@ -22,7 +22,6 @@ import com.magnet.max.android.util.MagnetUtils;
 import com.magnet.max.android.util.TypeUtil;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.RequestBody;
-import com.squareup.okhttp.Response;
 import com.squareup.okhttp.ResponseBody;
 import java.io.IOException;
 import java.io.Reader;
@@ -96,7 +95,7 @@ public class MagnetGsonConverter<T> implements Converter<T> {
       json = marshalBasicType(value, typeToken.getType());
       mediaType = MEDIA_TYPE_TEXT;
     } else if(isDateType(typeToken.getType())) {
-      json = Iso860DateConverter.toString((Date) value);
+      json = Iso8601DateConverter.toString((Date) value);
       mediaType = MEDIA_TYPE_JSON;
     } else if(isEnum(typeToken.getType())) {
       json = marshalBasicType(value, typeToken.getType());
@@ -190,7 +189,7 @@ public class MagnetGsonConverter<T> implements Converter<T> {
       if(String.class.equals(clazz)) {
         return (T) str;
       } else if(Date.class.equals(clazz)) {
-        return (T) Iso860DateConverter.fromString(str);
+        return (T) Iso8601DateConverter.fromString(str);
       } else if(Boolean.class.equals(clazz)) {
         return (T) Boolean.valueOf(str);
       } else if(isEnum(type)) {
@@ -219,7 +218,7 @@ public class MagnetGsonConverter<T> implements Converter<T> {
     if(type instanceof Class) {
       Class clazz = (Class) type;
       if(Date.class.equals(clazz)) {
-        return Iso860DateConverter.toString((Date) object);
+        return Iso8601DateConverter.toString((Date) object);
       }
     }
     return null != object ? object.toString() : null;
