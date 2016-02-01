@@ -196,7 +196,6 @@ import java.util.concurrent.atomic.AtomicReference;
     boolean isCallbackCalled = false;
     if(null != token) {
       Log.i(TAG, "userLogin success : ");
-      boolean isSameToken = isTokenSame(mUserIdRef.get(), mUserTokenRef.get(), userId, token);
 
       mToRememberMeRef.set(rememberMe);
 
@@ -284,6 +283,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
   public static UserToken getUserToken() {
     return mUserTokenRef.get();
+  }
+
+  public static String getUserId() {
+    return mUserIdRef.get();
   }
 
   public static Map<String, String> getServerConfigs() {
@@ -612,7 +615,8 @@ import java.util.concurrent.atomic.AtomicReference;
           //    "-------------credentials reloaded from local userToken = " + mUserTokenRef.get()
           //        .getAccessToken());
 
-          notifyUserTokenObservers(null);
+          //Call it in resumeSession
+          //notifyUserTokenObservers(null);
         }
 
         String userJson = credentialStore.getString(KEY_USER, null);
