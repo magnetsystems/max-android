@@ -42,6 +42,13 @@ import retrofit.Response;
  * This class provides various user specific methods, like authentication, signing up, and search.
  */
 final public class User extends UserProfile {
+
+  public enum SessionStatus {
+    NotLoggedIn,
+    LoggedIn,
+    CanResume
+  }
+
   private static final String TAG = "User";
 
   @SerializedName("email")
@@ -132,6 +139,39 @@ final public class User extends UserProfile {
         });
 
     call.executeInBackground();
+  }
+
+  /**
+   * Resume previous session without login.
+   * Only applicable when rememberMe is set to true in @see #login
+   * @param callback
+   */
+  public static void resumeSession(ApiCallback<Boolean> callback) {
+    if(null != getCurrentUser()) {
+      if(null != callback) {
+        callback.success(true);
+      }
+    } else {
+      if(SessionStatus.CanResume == getSessionStatus()) {
+        ModuleManager.onUserLogin(ModuleManager.getUserId(), ModuleManager.getUserToken(), true, callback);
+      } else {
+        if(null != callback) {
+          callback.failure(new ApiError("Session is not resumable"));
+        }
+      }
+    }
+  }
+
+  /**
+   * Get the status of session.
+   * @return
+   */
+  public static SessionStatus getSessionStatus() {
+    if(null != getCurrentUser()) {
+      return SessionStatus.LoggedIn;
+    } else {
+      return null != ModuleManager.getUserToken() ? SessionStatus.CanResume : SessionStatus.NotLoggedIn;
+    }
   }
 
   /**
