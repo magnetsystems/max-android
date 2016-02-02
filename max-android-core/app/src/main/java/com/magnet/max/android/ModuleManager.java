@@ -123,7 +123,7 @@ import java.util.concurrent.atomic.AtomicReference;
         module.onAppTokenUpdate(mAppTokenRef.get().getAccessToken(), mAppTokenRef.get().getMmxAppId(),
             Device.getCurrentDeviceId(), callback);
       }
-      if (mUserTokenRef.get() != null) {
+      if (mUserTokenRef.get() != null && (!mToRememberMeRef.get()) || (mToRememberMeRef.get() && null != User.getCurrentUser())) {
         Log.d(TAG, "--------userToken is availabe when register : " + mUserTokenRef.get());
         module.onUserTokenUpdate(mUserTokenRef.get().getAccessToken(), mUserIdRef.get(), Device.getCurrentDeviceId(), callback);
       }
@@ -210,6 +210,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
       registerDevice();
     }
+
+    return isCallbackCalled;
+  }
+
+  public static boolean onUserSessioinResume(ApiCallback<Boolean> callback) {
+    boolean isCallbackCalled = false;
+
+    Log.i(TAG, "onUserSessioinResume : ");
+
+    isCallbackCalled = notifyUserTokenObservers(callback);
 
     return isCallbackCalled;
   }
