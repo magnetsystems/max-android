@@ -146,14 +146,30 @@ final public class User extends UserProfile {
    * Only applicable when rememberMe is set to true in @see #login
    * @param callback
    */
-  public static void resumeSession(ApiCallback<Boolean> callback) {
+  public static void resumeSession(final ApiCallback<Boolean> callback) {
     if(null != getCurrentUser()) {
       if(null != callback) {
         callback.success(true);
       }
     } else {
       if(SessionStatus.CanResume == getSessionStatus()) {
-        ModuleManager.onUserLogin(ModuleManager.getUserId(), ModuleManager.getUserToken(), true, callback);
+        ModuleManager.onUserLogin(ModuleManager.getUserId(), ModuleManager.getUserToken(), true, new ApiCallback<Boolean>() {
+          @Override public void success(Boolean aBoolean) {
+            if(aBoolean) {
+              User.setCurrentUser(ModuleManager.getCachedUser());
+            }
+
+            if(null != callback) {
+              callback.success(aBoolean);
+            }
+          }
+
+          @Override public void failure(ApiError error) {
+            if(null != callback) {
+              callback.failure(error);
+            }
+          }
+        });
       } else {
         if(null != callback) {
           callback.failure(new ApiError("Session is not resumable"));
@@ -170,7 +186,7 @@ final public class User extends UserProfile {
     if(null != getCurrentUser()) {
       return SessionStatus.LoggedIn;
     } else {
-      return null != ModuleManager.getUserToken() ? SessionStatus.CanResume : SessionStatus.NotLoggedIn;
+      return (null != ModuleManager.getUserToken() && null != ModuleManager.getCachedUser()) ? SessionStatus.CanResume : SessionStatus.NotLoggedIn;
     }
   }
 

@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
   private volatile static AtomicReference<ApplicationToken> mAppTokenRef = new AtomicReference<ApplicationToken>(null);
   private volatile static AtomicReference<UserToken> mUserTokenRef = new AtomicReference<UserToken>(null);
   private volatile static AtomicReference<String> mUserIdRef = new AtomicReference<String>(null);
+  private volatile static AtomicReference<User> mCachedUserRef = new AtomicReference<User>(null);
   private volatile static AtomicBoolean mToRememberMeRef = new AtomicBoolean(false);
   private volatile static AtomicReference<Map<String, String>> mServerConfigsRef = new AtomicReference<>(null);
   private static Map<String, String> mCachedServerConfig = new HashMap<>();
@@ -295,6 +296,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
   public static Map<String, String> getCachedServerConfigs() {
     return mCachedServerConfig;
+  }
+
+  public static User getCachedUser() {
+    return mCachedUserRef.get();
   }
 
   /**
@@ -622,7 +627,8 @@ import java.util.concurrent.atomic.AtomicReference;
         String userJson = credentialStore.getString(KEY_USER, null);
         if (null != userJson) {
           Log.d(TAG, "CurrentUser loaded from local cache");
-          User.setCurrentUser(gson.fromJson(userJson, User.class));
+          //User.setCurrentUser();
+          mCachedUserRef.set(gson.fromJson(userJson, User.class));
         } else {
           Log.d(TAG, "CurrentUser couldn't be loaded from local cache");
         }
