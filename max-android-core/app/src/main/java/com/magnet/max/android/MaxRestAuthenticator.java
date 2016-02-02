@@ -42,9 +42,6 @@ public class MaxRestAuthenticator implements Authenticator {
 
   private static final int REFRESH_TOKEN_TIMEOUT = 5;
 
-  private UserService mUserService;
-  private ApplicationService mApplicationService;
-
   @Override public Request authenticate(Proxy proxy, Response response) throws IOException {
     Request request = response.request();
     String originalToken = AuthUtil.extractOAuthToken(request.header(AuthUtil.AUTHORIZATION_HEADER));
@@ -109,19 +106,11 @@ public class MaxRestAuthenticator implements Authenticator {
   }
 
   private UserService getUserService() {
-    if(null == mUserService) {
-      mUserService = MaxCore.create(UserService.class);
-    }
-
-    return mUserService;
+    return MaxCore.create(UserService.class);
   }
 
   private ApplicationService getApplicationService() {
-    if(null == mApplicationService) {
-      mApplicationService = MaxCore.create(ApplicationService.class);
-    }
-
-    return mApplicationService;
+    return MaxCore.create(ApplicationService.class);
   }
 
   private void renewAppToken(final AtomicReference<String> refreshedToken) {
@@ -189,7 +178,7 @@ public class MaxRestAuthenticator implements Authenticator {
           if (null != userLoginResponse.getAccessToken()) {
             ModuleManager.onUserTokenRefresh(userLoginResponse.getUser().getUserIdentifier(),
                 new UserToken(userLoginResponse.getExpiresIn(), userLoginResponse.getAccessToken(),
-                    userToken.getRefreshToken(), userLoginResponse.getTokenType()));
+                    userToken.getRefreshToken(), userLoginResponse.getTokenType()), null);
 
             refreshedToken.set(userLoginResponse.getAccessToken());
           } else {
