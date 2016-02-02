@@ -19,6 +19,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
 import com.google.gson.annotations.SerializedName;
+import com.magnet.max.android.auth.model.RenewTokenRequest;
 import com.magnet.max.android.auth.model.UpdateProfileRequest;
 import com.magnet.max.android.auth.model.UserLoginResponse;
 import com.magnet.max.android.auth.model.UserRealm;
@@ -153,27 +154,71 @@ final public class User extends UserProfile {
       }
     } else {
       if(SessionStatus.CanResume == getSessionStatus()) {
-        ModuleManager.onUserSessioinResume(new ApiCallback<Boolean>() {
+        UserToken userToken = ModuleManager.getUserToken();
+        final ApiCallback<Boolean> wrappedCallback = new ApiCallback<Boolean>() {
           @Override public void success(Boolean aBoolean) {
-            if(aBoolean) {
+            if (aBoolean) {
               Log.d(TAG, "User session resumed");
-              User.setCurrentUser(ModuleManager.getCachedUser());
             } else {
               Log.e(TAG, "User session failed to resume");
             }
 
-            if(null != callback) {
+            if (null != callback) {
               callback.success(aBoolean);
             }
           }
 
           @Override public void failure(ApiError error) {
             Log.e(TAG, "User session failed to resume due to " + error);
-            if(null != callback) {
+            if (null != callback) {
               callback.failure(error);
             }
           }
-        });
+        };
+        if(!userToken.isExpired()) {
+          User.setCurrentUser(ModuleManager.getCachedUser());
+          ModuleManager.onUserSessioinResume(wrappedCallback);
+        } else {
+          if(StringUtil.isNotEmpty(userToken.getRefreshToken())) {
+            getUserService().renewToken(new RenewTokenRequest(userToken.getRefreshToken()), AuthUtil.generateOAuthToken(userToken.getRefreshToken()),
+                new Callback<UserLoginResponse>() {
+                  @Override public void onResponse(retrofit.Response<UserLoginResponse> response) {
+                    if (response.isSuccess()) {
+                      Log.i(TAG, "renewToken success : ");
+                    } else {
+                      handleUserTokenRefreshFailure("renewToken failed due to : " + response.message());
+                      return;
+                    }
+
+                    UserLoginResponse userLoginResponse = response.body();
+                    User.setCurrentUser(ModuleManager.getCachedUser());
+                    if (null != userLoginResponse.getAccessToken()) {
+                      ModuleManager.onUserTokenRefresh(userLoginResponse.getUser().getUserIdentifier(),
+                          new UserToken(userLoginResponse.getExpiresIn(), userLoginResponse.getAccessToken(),
+                              userLoginResponse.getRefreshToken(), userLoginResponse.getTokenType()), wrappedCallback);
+                    } else {
+                      handleUserTokenRefreshFailure("No access token returned from refresh token response");
+                    }
+                  }
+
+                  @Override public void onFailure(Throwable throwable) {
+                    handleUserTokenRefreshFailure("renewToken failed due to : " + throwable.getMessage());
+                  }
+
+                  private void handleUserTokenRefreshFailure(String errorMessage) {
+                    Log.e(TAG, errorMessage);
+
+                    ModuleManager.onUserTokenInvalid();
+
+                    wrappedCallback.failure(new ApiError(errorMessage));
+                  }
+                }).executeInBackground();
+          } else {
+            if (null != callback) {
+              callback.failure(new ApiError("Token has expired and refresh token is not available"));
+            }
+          }
+        }
       } else {
         if(null != callback) {
           callback.failure(new ApiError("Session is not resumable"));

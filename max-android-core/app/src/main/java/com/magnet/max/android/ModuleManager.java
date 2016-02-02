@@ -224,7 +224,7 @@ import java.util.concurrent.atomic.AtomicReference;
     return isCallbackCalled;
   }
 
-  public static void onUserTokenRefresh(final String userId, UserToken token) {
+  public static void onUserTokenRefresh(final String userId, UserToken token, ApiCallback<Boolean> callback) {
     if(null != token) {
       Log.i(TAG, "refresh user token success : ");
 
@@ -232,7 +232,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
       mUserIdRef.set(userId);
 
-      notifyUserTokenObservers(null);
+      notifyUserTokenObservers(callback);
 
       if(mToRememberMeRef.get()) {
         mTokenLocalStore.updateUserToken();
@@ -623,8 +623,8 @@ import java.util.concurrent.atomic.AtomicReference;
             .get());
         String userTokenJson = credentialStore.getString(KEY_USER_TOKEN, null);
         if (null != userTokenJson) {
-
-          mUserTokenRef.set(gson.fromJson(userTokenJson, UserToken.class));
+          UserToken cachedUserToken = gson.fromJson(userTokenJson, UserToken.class);
+          mUserTokenRef.set(cachedUserToken);
 
           //Log.d(TAG,
           //    "-------------credentials reloaded from local userToken = " + mUserTokenRef.get()
