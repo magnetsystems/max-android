@@ -153,10 +153,13 @@ final public class User extends UserProfile {
       }
     } else {
       if(SessionStatus.CanResume == getSessionStatus()) {
-        ModuleManager.onUserLogin(ModuleManager.getUserId(), ModuleManager.getUserToken(), true, new ApiCallback<Boolean>() {
+        ModuleManager.onUserSessioinResume(new ApiCallback<Boolean>() {
           @Override public void success(Boolean aBoolean) {
             if(aBoolean) {
+              Log.d(TAG, "User session resumed");
               User.setCurrentUser(ModuleManager.getCachedUser());
+            } else {
+              Log.e(TAG, "User session failed to resume");
             }
 
             if(null != callback) {
@@ -165,6 +168,7 @@ final public class User extends UserProfile {
           }
 
           @Override public void failure(ApiError error) {
+            Log.e(TAG, "User session failed to resume due to " + error);
             if(null != callback) {
               callback.failure(error);
             }
