@@ -18,7 +18,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'maven'
 
 archivesBaseName = 'magnet-max-android-core'
-version = "2.3.1-SNAPSHOT"
+version = "2.4.0-b-1"
 group = "com.magnet.max.android"
 
 configurations {
