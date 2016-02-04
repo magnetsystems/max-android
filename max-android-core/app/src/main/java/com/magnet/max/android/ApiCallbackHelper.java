@@ -38,7 +38,7 @@ import retrofit.Response;
       } else if(ApiError.class.equals(throwable.getClass())) {
         callback.failure((ApiError) throwable);
       } else{
-        callback.failure(new ApiError(throwable.getMessage()));
+        callback.failure(new ApiError(throwable.getMessage(), throwable));
       }
     }
   }
