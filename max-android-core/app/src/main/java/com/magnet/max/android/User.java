@@ -414,7 +414,7 @@ final public class User extends UserProfile {
    * @param listener
    */
   public void setAvatar(File imageFile, final ApiCallback<Boolean> listener) {
-    if(mUserIdentifier == User.getCurrentUserId()) {
+    if(StringUtil.isStringValueEqual(mUserIdentifier, User.getCurrentUserId())) {
       if (null != imageFile) {
         Attachment attachment = new Attachment(imageFile,
             Attachment.getMimeType(imageFile.getName(), Attachment.MIME_TYPE_IMAGE));
