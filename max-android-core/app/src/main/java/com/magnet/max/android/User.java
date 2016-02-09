@@ -413,16 +413,34 @@ final public class User extends UserProfile {
    * @param imageFile
    * @param listener
    */
-  public void setAvatar(File imageFile, Attachment.UploadListener listener) {
+  public void setAvatar(File imageFile, final ApiCallback<Boolean> listener) {
     if(mUserIdentifier == User.getCurrentUserId()) {
       if (null != imageFile) {
         Attachment attachment = new Attachment(imageFile,
             Attachment.getMimeType(imageFile.getName(), Attachment.MIME_TYPE_IMAGE));
         attachment.addMetaData(Attachment.META_FILE_ID, mUserIdentifier);
-        attachment.upload(listener);
+        attachment.upload(new Attachment.UploadListener() {
+          @Override public void onStart(Attachment attachment) {
+
+          }
+
+          @Override public void onComplete(Attachment attachment) {
+            if(null != listener) {
+              listener.success(true);
+            }
+          }
+
+          @Override public void onError(Attachment attachment, Throwable error) {
+            if(null != listener) {
+              listener.failure(new ApiError(error));
+            }
+          }
+        });
       }
     } else {
-
+      if(null != listener) {
+        listener.failure(new ApiError("User can only set his/her own avatar"));
+      }
     }
   }
 
