@@ -70,8 +70,6 @@ final public class User extends UserProfile {
 
   private static final AtomicReference<User> sCurrentUserRef = new AtomicReference<>();
 
-  private static UserService sUserService;
-
   /**
    * Register a new user
    * @param userRegistrationInfo
