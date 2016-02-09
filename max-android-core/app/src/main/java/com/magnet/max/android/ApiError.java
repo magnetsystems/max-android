@@ -22,10 +22,10 @@ public class ApiError extends RuntimeException {
   /** Network error */
   public static int API_ERROR_KIND_NETWORK = 1;
   /** Unexpected error */
-  public static final int API_ERROR_UNEXPECTED = 100;
+  public static final int API_ERROR_UNDEFINED = 100;
 
   /**
-   * The kind of error. Except predefined @see ApiError#API_ERROR_KIND_NETWORK and @see ApiError#API_ERROR_UNEXPECTED,
+   * The kind of error. Except predefined @see ApiError#API_ERROR_KIND_NETWORK and @see ApiError#API_ERROR_UNDEFINED,
    * it could be the HTTP status code returned from server
    */
   private final int kind;
@@ -35,7 +35,7 @@ public class ApiError extends RuntimeException {
    * @param message
    */
   public ApiError(String message) {
-    this(message, API_ERROR_UNEXPECTED, null);
+    this(message, API_ERROR_UNDEFINED, null);
   }
 
   /**
@@ -43,7 +43,7 @@ public class ApiError extends RuntimeException {
    * @param exception
    */
   public ApiError(Throwable exception) {
-    this(null, API_ERROR_UNEXPECTED, exception);
+    this(exception.getMessage(), API_ERROR_UNDEFINED, exception);
   }
 
   /**
@@ -58,6 +58,15 @@ public class ApiError extends RuntimeException {
   /**
    * Construct a ApiError with error message, kind and throwable
    * @param message
+   * @param exception
+   */
+  public ApiError(String message, Throwable exception) {
+    this(message, API_ERROR_UNDEFINED, exception);
+  }
+
+  /**
+   * Construct a ApiError with error message, kind and throwable
+   * @param message
    * @param kind
    * @param exception
    */
@@ -67,7 +76,7 @@ public class ApiError extends RuntimeException {
   }
 
   /**
-   * The kind of the error. Except predefined @see ApiError#API_ERROR_KIND_NETWORK and @see ApiError#API_ERROR_UNEXPECTED,
+   * The kind of the error. Except predefined @see ApiError#API_ERROR_KIND_NETWORK and @see ApiError#API_ERROR_UNDEFINED,
    * it could be the HTTP status code returned from server
    * @return
    */

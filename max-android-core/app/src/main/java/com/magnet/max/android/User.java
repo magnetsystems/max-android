@@ -30,6 +30,7 @@ import com.magnet.max.android.util.EqualityUtil;
 import com.magnet.max.android.util.HashCodeBuilder;
 import com.magnet.max.android.util.ParcelableHelper;
 import com.magnet.max.android.util.StringUtil;
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -405,6 +406,42 @@ final public class User extends UserProfile {
       }
     });
     call.executeInBackground();
+  }
+
+  /**
+   * Set a image file as user profile image
+   * @param imageFile
+   * @param listener
+   */
+  public void setAvatar(File imageFile, final ApiCallback<Boolean> listener) {
+    if(mUserIdentifier == User.getCurrentUserId()) {
+      if (null != imageFile) {
+        Attachment attachment = new Attachment(imageFile,
+            Attachment.getMimeType(imageFile.getName(), Attachment.MIME_TYPE_IMAGE));
+        attachment.addMetaData(Attachment.META_FILE_ID, mUserIdentifier);
+        attachment.upload(new Attachment.UploadListener() {
+          @Override public void onStart(Attachment attachment) {
+
+          }
+
+          @Override public void onComplete(Attachment attachment) {
+            if(null != listener) {
+              listener.success(true);
+            }
+          }
+
+          @Override public void onError(Attachment attachment, Throwable error) {
+            if(null != listener) {
+              listener.failure(new ApiError(error));
+            }
+          }
+        });
+      }
+    } else {
+      if(null != listener) {
+        listener.failure(new ApiError("User can only set his/her own avatar"));
+      }
+    }
   }
 
   /**
