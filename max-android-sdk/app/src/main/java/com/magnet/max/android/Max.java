@@ -57,39 +57,6 @@ public class Max {
     mIsInited.set(true);
   }
 
-  ///**
-  // * Init Magnet Max Android with clientId, secret and default Sandbox baseUrl
-  // * @param context
-  // * @param clientId
-  // * @param clientSecret
-  // */
-  //public static synchronized void init(Context context, String clientId, String clientSecret) {
-  //  init(context, DEFAULT_BASE_URL, clientId, clientSecret);
-  //}
-  //
-  ///**
-  // * Init Magnet Max Android with baseUrl, clientId and secret
-  // * @param context
-  // * @param baseUrl
-  // * @param clientId
-  // * @param clientSecret
-  // */
-  //public static synchronized void init(Context context, final String baseUrl, final String clientId, final String clientSecret) {
-  //  init(context, new MaxAndroidConfig() {
-  //    @Override public String getBaseUrl() {
-  //      return baseUrl;
-  //    }
-  //
-  //    @Override public String getClientId() {
-  //      return clientId;
-  //    }
-  //
-  //    @Override public String getClientSecret() {
-  //      return clientSecret;
-  //    }
-  //  });
-  //}
-
   /**
    * Register and initialize a {@link MaxModule}
    * @param module
