@@ -41,6 +41,14 @@ public class UserProfile implements Parcelable {
   }
 
   /**
+   * The URL of the user avatar
+   * @return
+   */
+  public String getAvatarUrl() {
+    return Attachment.createDownloadUrl(mUserIdentifier, mUserIdentifier);
+  }
+
+  /**
    * The display name : first name + last name
    * @return
    */

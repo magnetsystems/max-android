@@ -30,6 +30,7 @@ import com.magnet.max.android.util.EqualityUtil;
 import com.magnet.max.android.util.HashCodeBuilder;
 import com.magnet.max.android.util.ParcelableHelper;
 import com.magnet.max.android.util.StringUtil;
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -405,6 +406,24 @@ final public class User extends UserProfile {
       }
     });
     call.executeInBackground();
+  }
+
+  /**
+   * Set a image file as user profile image
+   * @param imageFile
+   * @param listener
+   */
+  public void setAvatar(File imageFile, Attachment.UploadListener listener) {
+    if(mUserIdentifier == User.getCurrentUserId()) {
+      if (null != imageFile) {
+        Attachment attachment = new Attachment(imageFile,
+            Attachment.getMimeType(imageFile.getName(), Attachment.MIME_TYPE_IMAGE));
+        attachment.addMetaData(Attachment.META_FILE_ID, mUserIdentifier);
+        attachment.upload(listener);
+      }
+    } else {
+
+    }
   }
 
   /**

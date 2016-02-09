@@ -21,6 +21,7 @@ import android.os.AsyncTask;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
+import android.webkit.MimeTypeMap;
 import com.magnet.max.android.util.EqualityUtil;
 import com.magnet.max.android.util.HashCodeBuilder;
 import com.magnet.max.android.util.ParcelableHelper;
@@ -146,6 +147,10 @@ final public class Attachment implements Parcelable {
   private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
   private static final String TAG = Attachment.class.getSimpleName();
 
+  public static final String META_FILE_ID = "metadata_file_id";
+
+  public static final String MIME_TYPE_IMAGE = "image";
+  public static final String MIME_TYPE_VIDEO = "video";
   public static final String TEXT_PLAIN = "text/plain";
   public static final String TEXT_HTML = "text/html";
 
@@ -164,8 +169,6 @@ final public class Attachment implements Parcelable {
   protected transient byte[] data;
   /** The id to retrieve the attachment from server */
   protected String attachmentId;
-
-  protected transient String downloadUrl;
 
   private String senderId;
 
@@ -326,26 +329,9 @@ final public class Attachment implements Parcelable {
    * @return
    */
   public String getDownloadUrl() {
-    if(null == downloadUrl) {
-      checkIfContentAvailable();
+    checkIfContentAvailable();
 
-      if(null == ModuleManager.getUserToken()) {
-        throw new IllegalStateException("User hasn't login");
-      }
-
-      String baseUrl = MaxCore.getConfig().getBaseUrl();
-      StringBuilder urlBuilder = new StringBuilder(baseUrl);
-      if(!baseUrl.endsWith("/")) {
-        urlBuilder.append("/");
-      }
-      urlBuilder.append("com.magnet.server/file/download/").append(attachmentId)
-          .append("?access_token=").append(ModuleManager.getUserToken().getAccessToken())
-          .append("&").append("user_id=").append(getSenderId());
-
-      downloadUrl = urlBuilder.toString();
-    }
-
-    return downloadUrl;
+    return createDownloadUrl(attachmentId, getSenderId());
   }
 
   /**
@@ -603,6 +589,34 @@ final public class Attachment implements Parcelable {
         .append("metaData = ").append(StringUtil.toString(metaData))
         .append("}")
         .toString();
+  }
+
+  public static String getMimeType(String fileName, String type) {
+    if(StringUtil.isNotEmpty(fileName)) {
+      int idx = fileName.lastIndexOf(".");
+      if (idx >= 0 && idx < fileName.length() - 1) {
+        String format = fileName.substring(idx + 1);
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(format);
+      }
+    }
+    return type + "/*";
+  }
+
+  public static String createDownloadUrl(String attachmentId, String ownerId) {
+    if(null == ModuleManager.getUserToken()) {
+      throw new IllegalStateException("User hasn't login");
+    }
+
+    String baseUrl = MaxCore.getConfig().getBaseUrl();
+    StringBuilder urlBuilder = new StringBuilder(baseUrl);
+    if(!baseUrl.endsWith("/")) {
+      urlBuilder.append("/");
+    }
+    urlBuilder.append("com.magnet.server/file/download/").append(attachmentId)
+        .append("?access_token=").append(ModuleManager.getUserToken().getAccessToken())
+        .append("&").append("user_id=").append(ownerId);
+
+    return urlBuilder.toString();
   }
 
   protected AttachmentService getAttachmentService() {
@@ -927,7 +941,6 @@ final public class Attachment implements Parcelable {
     dest.writeString(this.charsetName);
     dest.writeByteArray(this.data);
     dest.writeString(this.attachmentId);
-    dest.writeString(this.downloadUrl);
     dest.writeString(this.senderId);
     dest.writeBundle(ParcelableHelper.stringMapToBundle(this.metaData));
   }
@@ -945,7 +958,6 @@ final public class Attachment implements Parcelable {
     this.content = in.readParcelable(Object.class.getClassLoader());
     this.data = in.createByteArray();
     this.attachmentId = in.readString();
-    this.downloadUrl = in.readString();
     this.senderId = in.readString();
     this.metaData = ParcelableHelper.stringMapfromBundle(in.readBundle(getClass().getClassLoader()));
   }
