@@ -436,6 +436,10 @@ final public class User extends UserProfile {
             }
           }
         });
+      } else {
+        if(null != listener) {
+          listener.failure(new ApiError("image should not be null"));
+        }
       }
     } else {
       if(null != listener) {
