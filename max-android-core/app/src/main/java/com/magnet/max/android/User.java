@@ -424,7 +424,7 @@ final public class User extends UserProfile {
 
           @Override public void onComplete(Attachment attachment) {
             if(null != listener) {
-              listener.success(Attachment.createDownloadUrl(mUserIdentifier, mUserIdentifier));
+              listener.success(getAvatarUrl());
             }
           }
 
