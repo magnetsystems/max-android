@@ -411,7 +411,7 @@ final public class User extends UserProfile {
    * @param imageFile
    * @param listener
    */
-  public void setAvatar(File imageFile, final ApiCallback<Boolean> listener) {
+  public void setAvatar(File imageFile, final ApiCallback<String> listener) {
     if(StringUtil.isStringValueEqual(mUserIdentifier, User.getCurrentUserId())) {
       if (null != imageFile) {
         Attachment attachment = new Attachment(imageFile,
@@ -424,7 +424,7 @@ final public class User extends UserProfile {
 
           @Override public void onComplete(Attachment attachment) {
             if(null != listener) {
-              listener.success(true);
+              listener.success(Attachment.createDownloadUrl(mUserIdentifier, mUserIdentifier));
             }
           }
 
