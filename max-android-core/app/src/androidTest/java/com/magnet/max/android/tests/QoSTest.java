@@ -151,7 +151,6 @@ public class QoSTest extends ApplicationTestCase<TestApplication> {
 
       final MaxAndroidConfig config = new MaxAndroidJsonConfig(getContext(), R.raw.keys);
       MaxHelper.initMax(getContext(), new MaxAndroidConfig() {
-        Map<String, String> allMap;
 
         @Override public String getBaseUrl() {
           return config.getBaseUrl();
@@ -169,14 +168,6 @@ public class QoSTest extends ApplicationTestCase<TestApplication> {
           return null;
         }
 
-        @Override public Map<String, String> getAllConfigs() {
-          if(null == allMap) {
-            allMap = new HashMap<String, String>();
-            allMap.put(MaxAndroidPropertiesConfig.PROP_BASE_URL, config.getBaseUrl());
-          }
-
-          return allMap;
-        }
       });
       //magnetServiceHttpAdapter = new MagnetRestAdapter.Builder().baseUrl("http://" + SERVER_PORT).build();
       myService = MaxCore.create(PrimitiveTypeService.class);

@@ -16,35 +16,55 @@
 
 package com.magnet.max.android.config;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This interface defines properties needed to initialize Magnet Max
+ * This abstract class defines properties needed to initialize Magnet Max
  */
-public interface MaxAndroidConfig {
+public abstract class MaxAndroidConfig {
+  public static final String PROP_CLIENT_ID = "client_id";
+  public static final String PROP_CLIENT_SECRET = "client_secret";
+  public static final String PROP_BASE_URL = "baseUrl";
+  public static final String PROP_SCOPE = "scope";
+
+  private Map<String, String> configMap;
 
   /**
    * The base URL of the Magnet Max server
    */
-  String getBaseUrl();
+  abstract public String getBaseUrl();
 
   /**
    * The clientId of the app
    */
-  String getClientId();
+  abstract public String getClientId();
 
   /**
    * The clientId secret the app
    */
-  String getClientSecret();
+  abstract public String getClientSecret();
 
   /**
    * The scope of the app
    */
-  String getScope();
+  public String getScope() {
+    return null;
+  }
 
   /**
    * All configuration properties in key-value pair
    */
-  Map<String, String> getAllConfigs();
+  public Map<String, String> getAllConfigs() {
+    if(null == configMap) {
+      configMap = new HashMap<>();
+    }
+
+    configMap.put(PROP_BASE_URL, getBaseUrl());
+    configMap.put(PROP_CLIENT_ID, getClientId());
+    configMap.put(PROP_CLIENT_SECRET, getClientSecret());
+    configMap.put(PROP_SCOPE, getScope());
+
+    return configMap;
+  }
 }

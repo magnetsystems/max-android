@@ -21,12 +21,16 @@ import com.magnet.max.android.MaxCore;
 import com.magnet.max.android.MaxModule;
 import com.magnet.max.android.config.MaxAndroidConfig;
 import com.magnet.mmx.client.api.MMX;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This class is the entry point of Magnet Max Android SDK.
  */
 public class Max {
   private static final String TAG = Max.class.getSimpleName();
+
+  private static final String DEFAULT_BASE_URL = "https://sandbox.magnet.com/mobile/api";
 
   // Disable default constructor
   private Max() {}
@@ -47,6 +51,39 @@ public class Max {
     }
 
     MaxCore.register(MMX.getModule());
+  }
+
+  /**
+   * Init Magnet Max Android with clientId, secret and default Sandbox baseUrl
+   * @param context
+   * @param clientId
+   * @param clientSecret
+   */
+  public static synchronized void init(Context context, String clientId, String clientSecret) {
+    init(context, DEFAULT_BASE_URL, clientId, clientSecret);
+  }
+
+  /**
+   * Init Magnet Max Android with baseUrl, clientId and secret
+   * @param context
+   * @param baseUrl
+   * @param clientId
+   * @param clientSecret
+   */
+  public static synchronized void init(Context context, final String baseUrl, final String clientId, final String clientSecret) {
+    init(context, new MaxAndroidConfig() {
+      @Override public String getBaseUrl() {
+        return baseUrl;
+      }
+
+      @Override public String getClientId() {
+        return clientId;
+      }
+
+      @Override public String getClientSecret() {
+        return clientSecret;
+      }
+    });
   }
 
   /**

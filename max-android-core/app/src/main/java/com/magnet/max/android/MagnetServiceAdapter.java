@@ -153,11 +153,11 @@ import retrofit.Response;
 
   private boolean isSameApp() {
     boolean result = config.getClientId().equals(
-        ModuleManager.getCachedServerConfigs().get(MaxAndroidPropertiesConfig.PROP_CLIENT_ID))
+        ModuleManager.getCachedServerConfigs().get(MaxAndroidConfig.PROP_CLIENT_ID))
         && config.getClientSecret().equals(
-        ModuleManager.getCachedServerConfigs().get(MaxAndroidPropertiesConfig.PROP_CLIENT_SECRET));
+        ModuleManager.getCachedServerConfigs().get(MaxAndroidConfig.PROP_CLIENT_SECRET));
     if(!result) {
-      Log.d(TAG, "Not same app : " + config.getClientId() + " != " + ModuleManager.getCachedServerConfigs().get(MaxAndroidPropertiesConfig.PROP_CLIENT_ID));
+      Log.d(TAG, "Not same app : " + config.getClientId() + " != " + ModuleManager.getCachedServerConfigs().get(MaxAndroidConfig.PROP_CLIENT_ID));
     }
     return result;
   }
