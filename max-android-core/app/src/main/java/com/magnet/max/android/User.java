@@ -15,6 +15,7 @@
  */
 package com.magnet.max.android;
 
+import android.graphics.Bitmap;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
@@ -407,15 +408,15 @@ final public class User extends UserProfile {
   }
 
   /**
-   * Set a image file as user profile image
-   * @param imageFile
+   * Set avatar for user
+   * @param imageBitmap
+   * @param mimeType
    * @param listener
    */
-  public void setAvatar(File imageFile, final ApiCallback<String> listener) {
+  public void setAvatar(Bitmap imageBitmap, String mimeType, final ApiCallback<String> listener) {
     if(StringUtil.isStringValueEqual(mUserIdentifier, User.getCurrentUserId())) {
-      if (null != imageFile) {
-        Attachment attachment = new Attachment(imageFile,
-            Attachment.getMimeType(imageFile.getName(), Attachment.MIME_TYPE_IMAGE));
+      if (null != imageBitmap) {
+        Attachment attachment = new Attachment(imageBitmap, StringUtil.isNotEmpty(mimeType) ? mimeType : Attachment.getMimeType(null, Attachment.MIME_TYPE_IMAGE));
         attachment.addMetaData(Attachment.META_FILE_ID, mUserIdentifier);
         attachment.upload(new Attachment.UploadListener() {
           @Override public void onStart(Attachment attachment) {
