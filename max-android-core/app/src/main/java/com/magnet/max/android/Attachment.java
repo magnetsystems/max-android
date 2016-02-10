@@ -17,6 +17,7 @@
 package com.magnet.max.android;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -69,7 +70,8 @@ final public class Attachment implements Parcelable {
     TEXT,
     FILE,
     INPUT_STREAM,
-    BYTE_ARRAY
+    BYTE_ARRAY,
+    BITMAP
   }
 
   /**
@@ -282,6 +284,17 @@ final public class Attachment implements Parcelable {
     sourceType = ContentSourceType.TEXT;
     //this.charsetName = charsetName;
     create(content, mimeType, name, description);
+  }
+
+  public Attachment(Bitmap content, String mimeType) {
+    if(null == content) {
+      throw new IllegalArgumentException("content shouldn't be empty");
+    }
+
+    validateMimeType(mimeType);
+
+    this.length = content.getByteCount();
+    sourceType = ContentSourceType.BITMAP;
   }
 
   protected void create(Object content, String mimeType, String name, String description) {
@@ -636,6 +649,32 @@ final public class Attachment implements Parcelable {
       }
     } else if(sourceType == ContentSourceType.INPUT_STREAM) {
       return convertInputStreamToBytes((InputStream) content);
+    } else if(sourceType == ContentSourceType.BITMAP) {
+      Bitmap bitmap = (Bitmap) content;
+      ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+      Bitmap.CompressFormat compressFormat = Bitmap.CompressFormat.PNG;
+      String imageType = mimeType.substring(mimeType.lastIndexOf("/") + 1);
+      if("png".equalsIgnoreCase(imageType)) {
+        compressFormat = Bitmap.CompressFormat.PNG;
+      } else if("webp".equalsIgnoreCase(imageType)) {
+        compressFormat = Bitmap.CompressFormat.WEBP;
+      } else if(imageType.toLowerCase().endsWith("jpg")) {
+        compressFormat = Bitmap.CompressFormat.JPEG;
+      }
+
+      try {
+        bitmap.compress(compressFormat, 100, stream);
+        return stream.toByteArray();
+      } catch (Exception e) {
+        Log.d(TAG, "Failed to convert bitmap to byte array");
+      } finally {
+        try {
+          stream.close();
+        } catch (IOException e) {
+
+        }
+      }
     } else if(sourceType == ContentSourceType.FILE) {
       InputStream in = null;
       try {
