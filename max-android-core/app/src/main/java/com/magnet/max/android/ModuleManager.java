@@ -172,7 +172,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
       notifyAppTokenObservers();
 
-      mTokenLocalStore.updateAppToken();
+      mTokenLocalStore.updateAppToken(appId);
     }
 
     onServerConfig(serverConfig);
@@ -188,7 +188,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
       notifyAppTokenObservers();
 
-      mTokenLocalStore.updateAppToken();
+      mTokenLocalStore.updateAppToken(null);
       mTokenLocalStore.updateServerConfigs();
     //}
   }
@@ -460,6 +460,7 @@ import java.util.concurrent.atomic.AtomicReference;
   }
 
   private final static class TokenLocalStore {
+    public static final String KEY_APP_ID = "appId";
     public static final String KEY_APP_TOKEN = "appToken";
     public static final String KEY_USER_ID = "userId";
     public static final String KEY_USER_TOKEN = "userToken";
@@ -493,8 +494,15 @@ import java.util.concurrent.atomic.AtomicReference;
           null);
     }
 
-    public void updateAppToken() {
+    public void updateAppToken(String appId) {
       SharedPreferences.Editor editor = credentialStore.edit();
+
+      if(null != appId) {
+        editor.putString(KEY_APP_ID, appId);
+      } else {
+        editor.remove(KEY_APP_ID);
+      }
+
       if(null == mAppTokenRef.get()) {
         editor.remove(KEY_APP_TOKEN);
       } else {
@@ -592,15 +600,20 @@ import java.util.concurrent.atomic.AtomicReference;
       Log.d(TAG, "-------------Loading from local cache------------- ");
       String appTokenJson = credentialStore.getString(KEY_APP_TOKEN, null);
       if (null != appTokenJson) {
-        ApplicationToken applicationToken = gson.fromJson(appTokenJson, ApplicationToken.class);
-        if(!applicationToken.isExpired()) {
-          mAppTokenRef.set(applicationToken);
+        String cachedAppId = credentialStore.getString(KEY_APP_ID, null);
+        if(null != cachedAppId && cachedAppId.equals(MaxCore.getConfig().getClientId())) {
+          ApplicationToken applicationToken = gson.fromJson(appTokenJson, ApplicationToken.class);
+          if (!applicationToken.isExpired()) {
+            mAppTokenRef.set(applicationToken);
 
-          Log.d(TAG, "-------------app token reloaded from local ");
+            Log.d(TAG, "-------------app token reloaded from local ");
 
-          //notifyAppTokenObservers();
+            //notifyAppTokenObservers();
+          } else {
+            Log.d(TAG, "Cached app token expired");
+          }
         } else {
-          Log.d(TAG, "Cached app token expired");
+          Log.d(TAG, "AppId doesn't match, don't reload app token");
         }
       } else {
         Log.d(TAG, "-------------app token couldn't be reloaded from local ");
