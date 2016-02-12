@@ -86,9 +86,10 @@ public abstract class MaxAndroidConfig {
     private String clientSecret;
     private String baseUrl;
     private String gcmSenderId;
+    private Map<String, String> mConfigMap;
 
     public Builder() {
-
+      mConfigMap = new HashMap<>();
     }
 
     /**
@@ -115,6 +116,11 @@ public abstract class MaxAndroidConfig {
      */
     public Builder clientSecret(String value) {
       clientSecret = value;
+      return this;
+    }
+
+    public Builder additionalConfig(String key, String value) {
+      mConfigMap.put(key, value);
       return this;
     }
 
@@ -151,6 +157,12 @@ public abstract class MaxAndroidConfig {
 
         @Override public String getGcmSenderId() {
           return gcmSenderId;
+        }
+
+        @Override public Map<String, String> getAllConfigs() {
+          Map<String, String> allConfig = super.getAllConfigs();
+          allConfig.putAll(mConfigMap);
+          return allConfig;
         }
       };
     }

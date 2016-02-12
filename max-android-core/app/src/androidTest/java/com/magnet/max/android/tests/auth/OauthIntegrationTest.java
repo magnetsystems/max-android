@@ -19,6 +19,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.BitmapFactory;
 import android.support.v4.content.LocalBroadcastManager;
 import android.test.AndroidTestCase;
 import android.test.suitebuilder.annotation.MediumTest;
@@ -141,6 +142,7 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
       }
     });
 
+
     //onInitSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     //assertEquals(0, onInitSignal.getCount());
     //onAppTokenSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
@@ -167,6 +169,24 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
     });
     updateProfileSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
     assertEquals(0, updateProfileSignal.getCount());
+
+    final CountDownLatch avatarSignal = new CountDownLatch(1);
+    User.getCurrentUser().setAvatar(BitmapFactory.decodeResource(getContext().getResources(), R.raw.test_image),
+        null, new ApiCallback<String>() {
+          @Override public void success(String s) {
+            assertNotNull(s);
+            assertEquals(Attachment.createDownloadUrl(User.getCurrentUserId(), User.getCurrentUserId()), s);
+            avatarSignal.countDown();
+          }
+
+          @Override public void failure(ApiError error) {
+            fail("setAvatar failed : " + error.getMessage());
+          }
+        });
+    avatarSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
+    assertEquals(0, avatarSignal.getCount());
+    assertNotNull(User.getCurrentUser().getAvatarUrl());
+
 
     //final CountDownLatch userSearchSignal = new CountDownLatch(1);
     //User.search("lastName=Liu", null, null, null, new ApiCallback<List<User>>() {

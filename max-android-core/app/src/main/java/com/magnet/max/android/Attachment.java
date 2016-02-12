@@ -23,6 +23,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
+import com.google.gson.annotations.SerializedName;
 import com.magnet.max.android.util.EqualityUtil;
 import com.magnet.max.android.util.HashCodeBuilder;
 import com.magnet.max.android.util.ParcelableHelper;
@@ -158,10 +159,15 @@ final public class Attachment implements Parcelable {
   private static File defaultDownloadDir;
 
   protected transient Status mStatus = Status.INIT;
+  @SerializedName("sourceType")
   protected ContentSourceType mSourceType;
+  @SerializedName("name")
   protected String mName;
+  @SerializedName("summary")
   protected String mSummary;
+  @SerializedName("mimeType")
   protected String mMimeType;
+  @SerializedName("length")
   protected long mLength = -1;
   private String charsetName;
 
@@ -169,10 +175,12 @@ final public class Attachment implements Parcelable {
 
   protected transient byte[] mData;
   /** The id to retrieve the attachment from server */
+  @SerializedName("attachmentId")
   protected String mAttachmentId;
 
   private String senderId;
 
+  @SerializedName("metaData")
   private transient Map<String, String> mMetaData;
 
   /**

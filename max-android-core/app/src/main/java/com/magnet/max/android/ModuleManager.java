@@ -172,7 +172,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
       notifyAppTokenObservers();
 
-      mTokenLocalStore.updateAppToken();
+      mTokenLocalStore.updateAppToken(appId);
     }
 
     onServerConfig(serverConfig);
@@ -188,7 +188,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
       notifyAppTokenObservers();
 
-      mTokenLocalStore.updateAppToken();
+      mTokenLocalStore.updateAppToken(null);
       mTokenLocalStore.updateServerConfigs();
     //}
   }
@@ -460,6 +460,7 @@ import java.util.concurrent.atomic.AtomicReference;
   }
 
   private final static class TokenLocalStore {
+    public static final String KEY_APP_ID = "appId";
     public static final String KEY_APP_TOKEN = "appToken";
     public static final String KEY_USER_ID = "userId";
     public static final String KEY_USER_TOKEN = "userToken";
@@ -493,8 +494,15 @@ import java.util.concurrent.atomic.AtomicReference;
           null);
     }
 
-    public void updateAppToken() {
+    public void updateAppToken(String appId) {
       SharedPreferences.Editor editor = credentialStore.edit();
+
+      if(null != appId) {
+        editor.putString(KEY_APP_ID, appId);
+      } else {
+        editor.remove(KEY_APP_ID);
+      }
+
       if(null == mAppTokenRef.get()) {
         editor.remove(KEY_APP_TOKEN);
       } else {
@@ -590,62 +598,68 @@ import java.util.concurrent.atomic.AtomicReference;
 
     public void loadCredentials() {
       Log.d(TAG, "-------------Loading from local cache------------- ");
-      String appTokenJson = credentialStore.getString(KEY_APP_TOKEN, null);
-      if (null != appTokenJson) {
-        ApplicationToken applicationToken = gson.fromJson(appTokenJson, ApplicationToken.class);
-        if(!applicationToken.isExpired()) {
-          mAppTokenRef.set(applicationToken);
+      String cachedAppId = credentialStore.getString(KEY_APP_ID, null);
+      if (null != cachedAppId && cachedAppId.equals(MaxCore.getConfig().getClientId())) {
+        Log.d(TAG, "-------------app id reloaded from local " + cachedAppId);
+        String appTokenJson = credentialStore.getString(KEY_APP_TOKEN, null);
+        if (null != appTokenJson) {
+          ApplicationToken applicationToken = gson.fromJson(appTokenJson, ApplicationToken.class);
+          if (!applicationToken.isExpired()) {
+            mAppTokenRef.set(applicationToken);
 
-          Log.d(TAG, "-------------app token reloaded from local ");
+            Log.d(TAG, "-------------app token reloaded from local ");
 
-          //notifyAppTokenObservers();
+            String serverConfigsJson = credentialStore.getString(KEY_SERVER_CONFIGS, null);
+            if(null != serverConfigsJson) {
+              mServerConfigsRef.set((Map<String, String>) gson.fromJson(serverConfigsJson, new TypeToken<Map<String, String>>(){}.getType()));
+              mCachedServerConfig.putAll(mServerConfigsRef.get());
+
+              Log.d(TAG, "-------------server config reloaded from local : " + mServerConfigsRef.get());
+            } else {
+              Log.d(TAG, "-------------server config couldn't be reloaded from local");
+            }
+
+            boolean toRememberMe = credentialStore.getBoolean(KEY_REMEMBER_ME, false);
+            if(toRememberMe) {
+              mUserIdRef.set(credentialStore.getString(KEY_USER_ID, null));
+              Log.d(TAG, "-------------rememberMe enabled, credentials reloaded from local, userName = " + mUserIdRef
+                  .get());
+              String userTokenJson = credentialStore.getString(KEY_USER_TOKEN, null);
+              if (null != userTokenJson) {
+                UserToken cachedUserToken = gson.fromJson(userTokenJson, UserToken.class);
+                mUserTokenRef.set(cachedUserToken);
+
+                //Log.d(TAG,
+                //    "-------------credentials reloaded from local userToken = " + mUserTokenRef.get()
+                //        .getAccessToken());
+
+                //Call it in resumeSession
+                //notifyUserTokenObservers(null);
+              }
+
+              String userJson = credentialStore.getString(KEY_USER, null);
+              if (null != userJson) {
+                Log.d(TAG, "CurrentUser loaded from local cache");
+                //User.setCurrentUser();
+                mCachedUserRef.set(gson.fromJson(userJson, User.class));
+              } else {
+                Log.d(TAG, "CurrentUser couldn't be loaded from local cache");
+              }
+            } else {
+              Log.d(TAG, "-------------rememberMe disabled");
+            }
+            mToRememberMeRef.set(toRememberMe);
+
+            //notifyAppTokenObservers();
+          } else {
+            Log.d(TAG, "Cached app token expired");
+          }
         } else {
-          Log.d(TAG, "Cached app token expired");
+          Log.d(TAG, "-------------app token couldn't be reloaded from local ");
         }
       } else {
-        Log.d(TAG, "-------------app token couldn't be reloaded from local ");
+        Log.d(TAG, "AppId doesn't match, don't reload cached token");
       }
-
-      String serverConfigsJson = credentialStore.getString(KEY_SERVER_CONFIGS, null);
-      if(null != serverConfigsJson) {
-        mServerConfigsRef.set((Map<String, String>) gson.fromJson(serverConfigsJson, new TypeToken<Map<String, String>>(){}.getType()));
-        mCachedServerConfig.putAll(mServerConfigsRef.get());
-
-        Log.d(TAG, "-------------server config reloaded from local : " + mServerConfigsRef.get());
-      } else {
-        Log.d(TAG, "-------------server config couldn't be reloaded from local");
-      }
-
-      boolean toRememberMe = credentialStore.getBoolean(KEY_REMEMBER_ME, false);
-      if(toRememberMe) {
-        mUserIdRef.set(credentialStore.getString(KEY_USER_ID, null));
-        Log.d(TAG, "-------------rememberMe enabled, credentials reloaded from local, userName = " + mUserIdRef
-            .get());
-        String userTokenJson = credentialStore.getString(KEY_USER_TOKEN, null);
-        if (null != userTokenJson) {
-          UserToken cachedUserToken = gson.fromJson(userTokenJson, UserToken.class);
-          mUserTokenRef.set(cachedUserToken);
-
-          //Log.d(TAG,
-          //    "-------------credentials reloaded from local userToken = " + mUserTokenRef.get()
-          //        .getAccessToken());
-
-          //Call it in resumeSession
-          //notifyUserTokenObservers(null);
-        }
-
-        String userJson = credentialStore.getString(KEY_USER, null);
-        if (null != userJson) {
-          Log.d(TAG, "CurrentUser loaded from local cache");
-          //User.setCurrentUser();
-          mCachedUserRef.set(gson.fromJson(userJson, User.class));
-        } else {
-          Log.d(TAG, "CurrentUser couldn't be loaded from local cache");
-        }
-      } else {
-        Log.d(TAG, "-------------rememberMe disabled");
-      }
-      mToRememberMeRef.set(toRememberMe);
     }
   }
 
