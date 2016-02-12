@@ -3,6 +3,7 @@
  */
 package com.magnet.max.android.auth.model;
 
+import com.google.gson.annotations.SerializedName;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,6 +16,7 @@ public class UpdateProfileRequest {
   private String firstName;
   private String lastName;
   private String[] tags;
+  @SerializedName("userAccountData")
   private java.util.Map<String, String> extras;
 
   private UpdateProfileRequest() {
