@@ -600,6 +600,7 @@ import java.util.concurrent.atomic.AtomicReference;
       Log.d(TAG, "-------------Loading from local cache------------- ");
       String cachedAppId = credentialStore.getString(KEY_APP_ID, null);
       if (null != cachedAppId && cachedAppId.equals(MaxCore.getConfig().getClientId())) {
+        Log.d(TAG, "-------------app id reloaded from local " + cachedAppId);
         String appTokenJson = credentialStore.getString(KEY_APP_TOKEN, null);
         if (null != appTokenJson) {
           ApplicationToken applicationToken = gson.fromJson(appTokenJson, ApplicationToken.class);
