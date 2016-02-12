@@ -174,6 +174,8 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
     User.getCurrentUser().setAvatar(BitmapFactory.decodeResource(getContext().getResources(), R.raw.test_image),
         null, new ApiCallback<String>() {
           @Override public void success(String s) {
+            assertNotNull(s);
+            assertEquals(Attachment.createDownloadUrl(User.getCurrentUserId(), User.getCurrentUserId()), s);
             avatarSignal.countDown();
           }
 
