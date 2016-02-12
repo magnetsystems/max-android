@@ -17,6 +17,7 @@ package com.magnet.max.android.auth.model;
 
 import java.util.Map;
 import java.util.UUID;
+import com.google.gson.annotations.SerializedName;
 
 /**
  * This class is used to register a new user
