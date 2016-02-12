@@ -3,6 +3,7 @@
  */
 package com.magnet.max.android.auth.model;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -123,6 +124,17 @@ public class UpdateProfileRequest {
      */
     public Builder extras(java.util.Map<String, String> value) {
       toBuild.extras = value;
+      return this;
+    }
+
+    /**
+     * The additional key-value pairs associated with the user.
+     */
+    public Builder extra(String key, String value) {
+      if(null == toBuild.extras) {
+        toBuild.extras = new HashMap<>();
+      }
+      toBuild.extras.put(key, value);
       return this;
     }
   }
