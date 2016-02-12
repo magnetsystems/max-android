@@ -31,8 +31,8 @@ import com.magnet.max.android.util.EqualityUtil;
 import com.magnet.max.android.util.HashCodeBuilder;
 import com.magnet.max.android.util.ParcelableHelper;
 import com.magnet.max.android.util.StringUtil;
-import java.io.File;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -53,6 +53,7 @@ final public class User extends UserProfile {
   }
 
   private static final String TAG = "User";
+  private static final String EXTRA_KEY_HAS_EXTRA = "hasAvatar";
 
   @SerializedName("email")
   private String mEmail;
@@ -427,6 +428,10 @@ final public class User extends UserProfile {
             if(null != listener) {
               listener.success(getAvatarUrl());
             }
+
+            updateExtra(EXTRA_KEY_HAS_EXTRA, "true");
+
+            mHasAvatar = Boolean.TRUE;
           }
 
           @Override public void onError(Attachment attachment, Throwable error) {
@@ -445,6 +450,16 @@ final public class User extends UserProfile {
         listener.failure(new ApiError("User can only set his/her own avatar"));
       }
     }
+  }
+
+  /**
+   * The URL of the user avatar
+   * @return
+   */
+  @Override
+  public String getAvatarUrl() {
+    mHasAvatar = StringUtil.isStringValueEqual(getExtra(EXTRA_KEY_HAS_EXTRA), "true");
+    return super.getAvatarUrl();
   }
 
   /**
@@ -494,6 +509,10 @@ final public class User extends UserProfile {
    */
   public Map<String, String> getExtras() {
     return mExtras;
+  }
+
+  public String getExtra(String key) {
+    return null != mExtras ? mExtras.get(key) : null;
   }
 
   private static UserService getUserService() {
@@ -597,4 +616,23 @@ final public class User extends UserProfile {
       return new User[size];
     }
   };
+
+  //----------------Private Methods----------------
+
+  private void updateExtra(final String key, final String value) {
+    if(null == mExtras) {
+      mExtras = new HashMap<>();
+    }
+    mExtras.put(key, value);
+
+    updateProfile(new UpdateProfileRequest.Builder().extras(mExtras).build(), new ApiCallback<User>() {
+      @Override public void success(User user) {
+        Log.d(TAG, "Updated extra " + key);
+      }
+
+      @Override public void failure(ApiError error) {
+        Log.e(TAG, "Failed to updateExtra " + key);
+      }
+    });
+  }
 }

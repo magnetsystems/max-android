@@ -18,6 +18,7 @@ public class UserProfile implements Parcelable {
   @SerializedName("firstName") protected String mFirstName;
   @SerializedName("lastName") protected String mLastName;
   protected String mDisplayName;
+  protected Boolean mHasAvatar;
 
   /**
    * The unique identifer for the user.
@@ -45,7 +46,7 @@ public class UserProfile implements Parcelable {
    * @return
    */
   public String getAvatarUrl() {
-    return Attachment.createDownloadUrl(mUserIdentifier, mUserIdentifier);
+    return (null == mHasAvatar || mHasAvatar) ? Attachment.createDownloadUrl(mUserIdentifier, mUserIdentifier) : null;
   }
 
   /**
