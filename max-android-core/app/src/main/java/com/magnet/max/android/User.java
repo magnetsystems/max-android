@@ -425,13 +425,11 @@ final public class User extends UserProfile {
           }
 
           @Override public void onComplete(Attachment attachment) {
+            updateExtra(EXTRA_KEY_HAS_EXTRA, "true");
+            mHasAvatar = Boolean.TRUE;
             if(null != listener) {
               listener.success(getAvatarUrl());
             }
-
-            updateExtra(EXTRA_KEY_HAS_EXTRA, "true");
-
-            mHasAvatar = Boolean.TRUE;
           }
 
           @Override public void onError(Attachment attachment, Throwable error) {
