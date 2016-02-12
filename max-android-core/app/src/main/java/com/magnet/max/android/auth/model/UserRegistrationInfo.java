@@ -32,6 +32,7 @@ public class UserRegistrationInfo {
   private String firstName;
   private String lastName;
   private String[] tags;
+  @SerializedName("userAccountData")
   private java.util.Map<String, String> extras;
 
   private UserRegistrationInfo() {
