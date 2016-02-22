@@ -20,6 +20,7 @@ import com.magnet.max.android.rest.annotation.Timeout;
 import com.squareup.okhttp.ResponseBody;
 import java.util.Map;
 import retrofit.MagnetCall;
+import retrofit.http.Body;
 import retrofit.http.GET;
 import retrofit.http.HeaderMap;
 import retrofit.http.Multipart;
@@ -47,16 +48,17 @@ public interface AttachmentService {
       @Part("file") com.squareup.okhttp.RequestBody body,
       retrofit.Callback<String> callback);
 
-  ///**
-  // *
-  // * POST
-  // * @param file style:Query optional:false
-  // * @param callback asynchronous callback
-  // */
-  //@Multipart
-  //@POST("/api/com.magnet.server/file/save")
-  //MagnetCall<Map<String, String>> upload(@Part("file") com.squareup.okhttp.RequestBody file,
-  //    retrofit.Callback<Map<String, String>> callback);
+  /**
+   *
+   * POST
+   * @param file style:Query optional:false
+   * @param callback asynchronous callback
+   */
+  @Timeout(write = 5 * 60)
+  @POST("/api/com.magnet.server/file/save/multiple")
+  MagnetCall<Map<String, String>> uploadMultiple(@HeaderMap Map<String, String> metaData,
+      @Body com.squareup.okhttp.RequestBody file,
+      retrofit.Callback<Map<String, String>> callback);
 
   @Timeout(read = 5 * 60)
   @GET("/api/com.magnet.server/file/download/{fileId}")

@@ -29,6 +29,7 @@ import com.magnet.max.android.util.HashCodeBuilder;
 import com.magnet.max.android.util.ParcelableHelper;
 import com.magnet.max.android.util.StringUtil;
 import com.squareup.okhttp.MediaType;
+import com.squareup.okhttp.MultipartBuilder;
 import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.ResponseBody;
 import java.io.ByteArrayOutputStream;
@@ -41,6 +42,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -422,19 +424,19 @@ final public class Attachment implements Parcelable {
       }
 
       final AtomicReference<Long> startTime = new AtomicReference<>();
-      Callback<String> uploadCallback = new Callback<String>() {
-        @Override public void onResponse(Response<String> response) {
+      Callback<Map<String, String>> uploadCallback = new Callback<Map<String, String>>() {
+        @Override public void onResponse(Response<Map<String, String>> response) {
           if (response.isSuccess()) {
-            String result = response.body();
-            if (StringUtil.isNotEmpty(result)) {
-              mAttachmentId = result;
+            Map<String, String> result = response.body();
+            if (null != result && !result.isEmpty()) {
+              mAttachmentId = result.values().iterator().next();
               mStatus = Status.COMPLETE;
               Log.d(TAG, "It took " + (System.currentTimeMillis() - startTime.get())/1000 + " seconds to upload attachment " + mAttachmentId);
               if (null != listener) {
                 listener.onComplete(Attachment.this);
               }
             } else {
-              handleError(new Exception("Can't mAttachmentId from response"));
+              handleError(new Exception("Can't get attachmentId from response"));
             }
           } else {
             handleError(new Exception(response.message()));
@@ -462,7 +464,12 @@ final public class Attachment implements Parcelable {
         requestBody = RequestBody.create(MediaType.parse(getMimeType()), getAsBytes());
       }
       startTime.set(System.currentTimeMillis());
-      getAttachmentService().upload(mMetaData, requestBody, uploadCallback)
+
+      String partName = StringUtil.isNotEmpty(mName) ? mName : "attachment";
+      getAttachmentService().uploadMultiple(mMetaData,
+          new MultipartBuilder().type(MultipartBuilder.FORM)
+              .addFormDataPart(partName, partName, requestBody).build(),
+                uploadCallback)
           .executeInBackground();
 
       mStatus = Status.TRANSFERING;
