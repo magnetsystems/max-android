@@ -38,6 +38,7 @@ import com.magnet.max.android.config.MaxAndroidConfig;
 import com.magnet.max.android.tests.R;
 import com.magnet.max.android.tests.utils.MaxAndroidJsonConfig;
 import com.magnet.max.android.tests.utils.MaxHelper;
+import java.lang.ref.Reference;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -204,7 +205,7 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
     //assertEquals(0, userRegSignal.getCount());
 
     //AttachmentService attachmentService = MaxCore.create(AttachmentService.class);
-    Attachment attachment = new Attachment(getContext().getResources().openRawResource(
+    final Attachment attachment = new Attachment(getContext().getResources().openRawResource(
         R.raw.test_image), "image/jpeg");
     //Attachment attachment2 = new FileAttachment("image/jpeg", new File("path"));
     //Attachment attachment3 = new BytesAttachment("image/jpeg", new byte[] {});
@@ -236,31 +237,26 @@ public class OauthIntegrationTest extends AndroidTestCase implements MaxModule {
     assertTrue(attachment.getLength() > 0);
     assertEquals(Attachment.Status.COMPLETE, attachment.getStatus());
 
-    //final CountDownLatch downloadSignal = new CountDownLatch(1);
-    //InputStreamAttachment downloadAttachment = new InputStreamAttachment(attachment.getAttachmentId());
-    //assertNull(downloadAttachment.getAsBytes());
-    //downloadAttachment.downloadAsBytes(new Attachment.AttachmentTrasferLister() {
-    //  @Override public void onStart(Attachment attachment) {
-    //
-    //  }
-    //
-    //  @Override public void onProgress(Attachment attachment, long processedBytes) {
-    //
-    //  }
-    //
-    //  @Override public void onComplete(Attachment attachment) {
-    //    downloadSignal.countDown();
-    //  }
-    //
-    //  @Override public void onError(Attachment attachment, Throwable error) {
-    //    fail(error.getMessage());
-    //    downloadSignal.countDown();
-    //  }
-    //});
-    //downloadSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
-    //assertEquals(0, downloadSignal.getCount());
-    //assertNotNull(downloadAttachment.getAsBytes());
-    //assertEquals(attachment.getLength(), downloadAttachment.getLength());
+    final CountDownLatch downloadSignal = new CountDownLatch(2);
+    Attachment.DownloadAsBytesListener downloadAsBytesListener = new Attachment.DownloadAsBytesListener() {
+      @Override public void onComplete(byte[] content) {
+        assertNotNull(content);
+        assertEquals(attachment.getLength(), content.length);
+        downloadSignal.countDown();
+      }
+
+      @Override public void onError(Throwable error) {
+        downloadSignal.countDown();
+      }
+    };
+    attachment.download(downloadAsBytesListener);
+    downloadSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
+    assertEquals(1, downloadSignal.getCount());
+
+    // Download again. should get from cache
+    attachment.download(downloadAsBytesListener);
+    downloadSignal.await(WAIT_TIME_SECONDS, TimeUnit.SECONDS);
+    assertEquals(0, downloadSignal.getCount());
 
     final CountDownLatch logoutSignal = new CountDownLatch(1);
     User.logout(new ApiCallback<Boolean>() {
