@@ -30,11 +30,13 @@ import com.magnet.max.android.rest.RestConstants;
 import com.magnet.max.android.rest.annotation.Timeout;
 import com.magnet.max.android.rest.marshalling.MagnetGsonConverterFactory;
 import com.magnet.max.android.util.StringUtil;
+import com.squareup.okhttp.Cache;
 import com.squareup.okhttp.HttpUrl;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.ResponseBody;
+import java.io.File;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -109,7 +111,7 @@ import static retrofit.Utils.checkNotNull;
 public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
 
   private static final String TAG = MagnetRestAdapter.class.getSimpleName();
-  private static final int DEFAULT_CACHE_SIZE = 100 * 1024 *1024; // 100M
+  private static final int DEFAULT_CACHE_SIZE = 200 * 1024 * 1024; // 100M
   private static final int DEFAULT_LONG_TIMEOUT = 5; // 5 Minutes
 
   private final Map<Method, MethodHandler<?>> methodHandlerCache = new LinkedHashMap<>();
@@ -161,11 +163,11 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
     }
 
     // Set cache
-    //if(null == client.getCache()) {
-    //  client.setCache(
-    //      new Cache(new File(applicationContext.getCacheDir(), applicationContext.getPackageName()),
-    //          DEFAULT_CACHE_SIZE));
-    //}
+    if(null == client.getCache()) {
+      client.setCache(
+          new Cache(new File(applicationContext.getCacheDir(), applicationContext.getPackageName()),
+              DEFAULT_CACHE_SIZE));
+    }
 
     ConnectivityManager.getInstance(applicationContext).registerListener(requestManager);
 
