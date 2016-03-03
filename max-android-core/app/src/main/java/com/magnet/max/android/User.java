@@ -15,10 +15,12 @@
  */
 package com.magnet.max.android;
 
+import android.graphics.Bitmap;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
 import com.google.gson.annotations.SerializedName;
+import com.magnet.max.android.auth.model.RenewTokenRequest;
 import com.magnet.max.android.auth.model.UpdateProfileRequest;
 import com.magnet.max.android.auth.model.UserLoginResponse;
 import com.magnet.max.android.auth.model.UserRealm;
@@ -30,6 +32,7 @@ import com.magnet.max.android.util.HashCodeBuilder;
 import com.magnet.max.android.util.ParcelableHelper;
 import com.magnet.max.android.util.StringUtil;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,11 +44,17 @@ import retrofit.Response;
  * The User class is a local representation of a user in the MagnetMax platform.
  * This class provides various user specific methods, like authentication, signing up, and search.
  */
-final public class User implements Parcelable {
-  private static final String TAG = "User";
+final public class User extends UserProfile {
 
-  @SerializedName("userIdentifier")
-  private String mUserIdentifier;
+  public enum SessionStatus {
+    NotLoggedIn,
+    LoggedIn,
+    CanResume
+  }
+
+  private static final String TAG = "User";
+  private static final String EXTRA_KEY_HAS_EXTRA = "hasAvatar";
+
   @SerializedName("email")
   private String mEmail;
   @SerializedName("roles")
@@ -56,18 +65,12 @@ final public class User implements Parcelable {
   private String mUserName;
   @SerializedName("userRealm")
   private UserRealm mUserRealm;
-  @SerializedName("firstName")
-  private String mFirstName;
-  @SerializedName("lastName")
-  private String mLastName;
   @SerializedName("tags")
   private String[] mTags;
   @SerializedName("userAccountData")
   private java.util.Map<String, String> mExtras;
 
   private static final AtomicReference<User> sCurrentUserRef = new AtomicReference<>();
-
-  private static UserService sUserService;
 
   /**
    * Register a new user
@@ -138,6 +141,103 @@ final public class User implements Parcelable {
         });
 
     call.executeInBackground();
+  }
+
+  /**
+   * Resume previous session without login.
+   * Only applicable when rememberMe is set to true in @see #login
+   * @param callback
+   */
+  public static void resumeSession(final ApiCallback<Boolean> callback) {
+    if(null != getCurrentUser()) {
+      if(null != callback) {
+        callback.success(true);
+      }
+    } else {
+      if(SessionStatus.CanResume == getSessionStatus()) {
+        UserToken userToken = ModuleManager.getUserToken();
+        final ApiCallback<Boolean> wrappedCallback = new ApiCallback<Boolean>() {
+          @Override public void success(Boolean aBoolean) {
+            if (aBoolean) {
+              Log.d(TAG, "User session resumed");
+            } else {
+              Log.e(TAG, "User session failed to resume");
+            }
+
+            if (null != callback) {
+              callback.success(aBoolean);
+            }
+          }
+
+          @Override public void failure(ApiError error) {
+            Log.e(TAG, "User session failed to resume due to " + error);
+            if (null != callback) {
+              callback.failure(error);
+            }
+          }
+        };
+        if(!userToken.isExpired()) {
+          User.setCurrentUser(ModuleManager.getCachedUser());
+          ModuleManager.onUserSessioinResume(wrappedCallback);
+        } else {
+          if(StringUtil.isNotEmpty(userToken.getRefreshToken())) {
+            getUserService().renewToken(new RenewTokenRequest(userToken.getRefreshToken()), AuthUtil.generateOAuthToken(userToken.getRefreshToken()),
+                new Callback<UserLoginResponse>() {
+                  @Override public void onResponse(retrofit.Response<UserLoginResponse> response) {
+                    if (response.isSuccess()) {
+                      Log.i(TAG, "renewToken success : ");
+                    } else {
+                      handleUserTokenRefreshFailure("renewToken failed due to : " + response.message());
+                      return;
+                    }
+
+                    UserLoginResponse userLoginResponse = response.body();
+                    User.setCurrentUser(ModuleManager.getCachedUser());
+                    if (null != userLoginResponse.getAccessToken()) {
+                      ModuleManager.onUserTokenRefresh(userLoginResponse.getUser().getUserIdentifier(),
+                          new UserToken(userLoginResponse.getExpiresIn(), userLoginResponse.getAccessToken(),
+                              userLoginResponse.getRefreshToken(), userLoginResponse.getTokenType()), wrappedCallback);
+                    } else {
+                      handleUserTokenRefreshFailure("No access token returned from refresh token response");
+                    }
+                  }
+
+                  @Override public void onFailure(Throwable throwable) {
+                    handleUserTokenRefreshFailure("renewToken failed due to : " + throwable.getMessage());
+                  }
+
+                  private void handleUserTokenRefreshFailure(String errorMessage) {
+                    Log.e(TAG, errorMessage);
+
+                    ModuleManager.onUserTokenInvalid();
+
+                    wrappedCallback.failure(new ApiError(errorMessage));
+                  }
+                }).executeInBackground();
+          } else {
+            if (null != callback) {
+              callback.failure(new ApiError("Token has expired and refresh token is not available"));
+            }
+          }
+        }
+      } else {
+        if(null != callback) {
+          callback.failure(new ApiError("Session is not resumable"));
+        }
+      }
+    }
+  }
+
+  /**
+   * Get the status of session.
+   * @return
+   */
+  public static SessionStatus getSessionStatus() {
+    if(null != getCurrentUser()) {
+      return SessionStatus.LoggedIn;
+    } else {
+      return (null != ModuleManager.getUserToken() && null != ModuleManager.getCachedUser()) ? SessionStatus.CanResume : SessionStatus.NotLoggedIn;
+    }
   }
 
   /**
@@ -266,6 +366,14 @@ final public class User implements Parcelable {
   }
 
   /**
+   * Only use internally for rememberme
+   * @param user
+   */
+  static void setCurrentUser(User user) {
+    sCurrentUserRef.set(user);
+  }
+
+  /**
    * Get the id of currently login user
    * @return
    */
@@ -301,10 +409,55 @@ final public class User implements Parcelable {
   }
 
   /**
-   * The unique identifer for the user.
+   * Set avatar for user
+   * @param imageBitmap
+   * @param mimeType
+   * @param listener
    */
-  public String getUserIdentifier() {
-    return mUserIdentifier;
+  public void setAvatar(Bitmap imageBitmap, String mimeType, final ApiCallback<String> listener) {
+    if(StringUtil.isStringValueEqual(mUserIdentifier, User.getCurrentUserId())) {
+      if (null != imageBitmap) {
+        Attachment attachment = new Attachment(imageBitmap, StringUtil.isNotEmpty(mimeType) ? mimeType : Attachment.getMimeType(null, Attachment.MIME_TYPE_IMAGE));
+        attachment.addMetaData(Attachment.META_FILE_ID, mUserIdentifier);
+        attachment.upload(new Attachment.UploadListener() {
+          @Override public void onStart(Attachment attachment) {
+
+          }
+
+          @Override public void onComplete(Attachment attachment) {
+            updateExtra(EXTRA_KEY_HAS_EXTRA, "true");
+            mHasAvatar = Boolean.TRUE;
+            if(null != listener) {
+              listener.success(getAvatarUrl());
+            }
+          }
+
+          @Override public void onError(Attachment attachment, Throwable error) {
+            if(null != listener) {
+              listener.failure(new ApiError(error));
+            }
+          }
+        });
+      } else {
+        if(null != listener) {
+          listener.failure(new ApiError("image should not be null"));
+        }
+      }
+    } else {
+      if(null != listener) {
+        listener.failure(new ApiError("User can only set his/her own avatar"));
+      }
+    }
+  }
+
+  /**
+   * The URL of the user avatar
+   * @return
+   */
+  @Override
+  public String getAvatarUrl() {
+    mHasAvatar = StringUtil.isStringValueEqual(getExtra(EXTRA_KEY_HAS_EXTRA), "true");
+    return super.getAvatarUrl();
   }
 
   /**
@@ -343,20 +496,6 @@ final public class User implements Parcelable {
   }
 
   /**
-   * The firstName for the user.
-   */
-  public String getFirstName() {
-    return mFirstName;
-  }
-
-  /**
-   * The lastName for the user.
-   */
-  public String getLastName() {
-    return mLastName;
-  }
-
-  /**
    * The tags associated with the user.
    */
   public String[] getTags() {
@@ -370,13 +509,12 @@ final public class User implements Parcelable {
     return mExtras;
   }
 
-  //TODO : synchronization ?
-  private static UserService getUserService() {
-    if(null == sUserService) {
-      sUserService = MaxCore.create(UserService.class);
-    }
+  public String getExtra(String key) {
+    return null != mExtras ? mExtras.get(key) : null;
+  }
 
-    return sUserService;
+  private static UserService getUserService() {
+    return MaxCore.create(UserService.class);
   }
 
   /**
@@ -442,13 +580,11 @@ final public class User implements Parcelable {
   }
 
   @Override public void writeToParcel(Parcel dest, int flags) {
-    dest.writeString(this.mUserIdentifier);
+    super.writeToParcel(dest, flags);
     dest.writeString(this.mEmail);
     dest.writeStringArray(this.mRoles);
     dest.writeString(this.mUserName);
     dest.writeInt(this.mUserRealm == null ? -1 : this.mUserRealm.ordinal());
-    dest.writeString(this.mFirstName);
-    dest.writeString(this.mLastName);
     dest.writeStringArray(this.mTags);
     dest.writeBundle(ParcelableHelper.stringMapToBundle(this.mExtras));
   }
@@ -458,13 +594,13 @@ final public class User implements Parcelable {
 
   protected User(Parcel in) {
     this.mUserIdentifier = in.readString();
+    this.mFirstName = in.readString();
+    this.mLastName = in.readString();
     this.mEmail = in.readString();
     this.mRoles = in.createStringArray();
     this.mUserName = in.readString();
     int tmpMUserRealm = in.readInt();
     this.mUserRealm = tmpMUserRealm == -1 ? null : UserRealm.values()[tmpMUserRealm];
-    this.mFirstName = in.readString();
-    this.mLastName = in.readString();
     this.mTags = in.createStringArray();
     this.mExtras = ParcelableHelper.stringMapfromBundle(in.readBundle(getClass().getClassLoader()));
   }
@@ -478,4 +614,23 @@ final public class User implements Parcelable {
       return new User[size];
     }
   };
+
+  //----------------Private Methods----------------
+
+  private void updateExtra(final String key, final String value) {
+    if(null == mExtras) {
+      mExtras = new HashMap<>();
+    }
+    mExtras.put(key, value);
+
+    updateProfile(new UpdateProfileRequest.Builder().extras(mExtras).build(), new ApiCallback<User>() {
+      @Override public void success(User user) {
+        Log.d(TAG, "Updated extra " + key);
+      }
+
+      @Override public void failure(ApiError error) {
+        Log.e(TAG, "Failed to updateExtra " + key);
+      }
+    });
+  }
 }

@@ -20,8 +20,11 @@ import android.util.Log;
 import com.magnet.max.android.config.MaxAndroidConfig;
 import com.magnet.max.android.connectivity.ConnectivityManager;
 import com.magnet.max.android.rest.SystemDataStore;
+import com.magnet.max.android.util.MagnetUtils;
 import com.magnet.max.android.util.StringUtil;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 final public class MaxCore {
@@ -35,6 +38,8 @@ final public class MaxCore {
 
   private static MagnetServiceAdapter mServiceAdapter;
 
+  private static Map<Class<?>, Object> mServiceCache = new ConcurrentHashMap<>();
+
   /**
    * Initialize Max Core with given configuration
    * @param context
@@ -44,8 +49,12 @@ final public class MaxCore {
     if(null == context) {
       throw new IllegalArgumentException("applicationContext shouldn't be null");
     }
+    if(null == config) {
+      throw new IllegalArgumentException("MaxAndroidConfig shouldn't be null");
+    }
 
-    if(mIsInited.get() && context.getApplicationContext().equals(mApplicationContext)&& isConfigEqual(config)) {
+    if(mIsInited.get() && (context.getApplicationContext() == mApplicationContext)
+        && MagnetUtils.isMapEquals(mConfig.getAllConfigs(), config.getAllConfigs())) {
       String message = "MaxCore has been already inited with same config";
       Log.w(TAG, "------" + message);
       throw new IllegalStateException(message);
@@ -62,6 +71,7 @@ final public class MaxCore {
     ModuleManager.init();
 
     // Init service adapter
+    mServiceCache.clear();
     mServiceAdapter = new MagnetServiceAdapter.Builder().applicationContext(mApplicationContext)
         .config(config).build();
 
@@ -151,22 +161,11 @@ final public class MaxCore {
    * @return
    */
   public static <T> T create(Class<T> service) {
-    return mServiceAdapter.create(service);
-  }
-
-  private static boolean isConfigEqual(MaxAndroidConfig config) {
-    if(mConfig.getAllConfigs().size() != config.getAllConfigs().size()) {
-      return false;
+    T result = (T) mServiceCache.get(service);
+    if(null == result) {
+      result = mServiceAdapter.create(service);
+      mServiceCache.put(service, result);
     }
-
-    Set<String> keys = mConfig.getAllConfigs().keySet();
-    for(String k : keys) {
-      if(!StringUtil.isStringValueEqual(mConfig.getAllConfigs().get(k),
-          config.getAllConfigs().get(k))) {
-        return false;
-      }
-    }
-
-    return true;
+    return result;
   }
 }

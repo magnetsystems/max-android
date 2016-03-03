@@ -43,7 +43,7 @@ public class MagnetGsonConverterFactory implements Converter.Factory {
   private MagnetGsonConverterFactory(Gson gson) {
     if (gson == null) {
       gson = new GsonBuilder()
-          .setDateFormat(Iso860DateConverter.ISO8601DateFormat)
+          .setDateFormat(Iso8601DateConverter.ISO8601DateFormat_WITH_MS)
               //.registerTypeAdapter(Date.class, new DateTypeAdapter())
           .create();
     };

@@ -17,6 +17,7 @@ package com.magnet.max.android.util;
 
 import android.util.Log;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 public class MagnetUtils {
@@ -54,5 +55,51 @@ public class MagnetUtils {
     sb.append("]");
 
     return sb.toString();
+  }
+
+  public static boolean isMapEquals(Map<String, String> map1, Map<String, String> map2) {
+    if(null == map1) {
+      return null == map2;
+    }
+
+    if(null == map2) {
+      return null == map1;
+    }
+
+    if(map1.size() != map2.size()) {
+      return false;
+    }
+
+    Set<String> keys = map1.keySet();
+    for(String k : keys) {
+      if(!StringUtil.isStringValueEqual(map1.get(k), map2.get(k))) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  public static boolean isMapContainedIn(Map<String, String> map1, Map<String, String> map2) {
+    if(null == map1) {
+      return true;
+    }
+
+    if(null == map2) {
+      return false;
+    }
+
+    if(map1.size() > map2.size()) {
+      return false;
+    }
+
+    Set<String> keys = map1.keySet();
+    for(String k : keys) {
+      if(!StringUtil.isStringValueEqual(map1.get(k), map2.get(k))) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }

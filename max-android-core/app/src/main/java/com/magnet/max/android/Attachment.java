@@ -17,10 +17,13 @@
 package com.magnet.max.android;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
+import android.webkit.MimeTypeMap;
+import com.google.gson.annotations.SerializedName;
 import com.magnet.max.android.util.EqualityUtil;
 import com.magnet.max.android.util.HashCodeBuilder;
 import com.magnet.max.android.util.ParcelableHelper;
@@ -43,7 +46,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import retrofit.Callback;
 import retrofit.Response;
-import retrofit.http.POST;
 
 /**
  * Attachment is used to save/download large content (such as file) to/from Max server.
@@ -68,7 +70,8 @@ final public class Attachment implements Parcelable {
     TEXT,
     FILE,
     INPUT_STREAM,
-    BYTE_ARRAY
+    BYTE_ARRAY,
+    BITMAP
   }
 
   /**
@@ -146,32 +149,39 @@ final public class Attachment implements Parcelable {
   private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
   private static final String TAG = Attachment.class.getSimpleName();
 
+  public static final String META_FILE_ID = "metadata_file_id";
+
+  public static final String MIME_TYPE_IMAGE = "image";
+  public static final String MIME_TYPE_VIDEO = "video";
   public static final String TEXT_PLAIN = "text/plain";
   public static final String TEXT_HTML = "text/html";
 
   private static File defaultDownloadDir;
 
-  protected transient Status status = Status.INIT;
-  protected ContentSourceType sourceType;
-  protected String name;
-  protected String summary;
-  protected String mimeType;
-  protected long length = -1;
+  protected transient Status mStatus = Status.INIT;
+  @SerializedName("sourceType")
+  protected ContentSourceType mSourceType;
+  @SerializedName("name")
+  protected String mName;
+  @SerializedName("summary")
+  protected String mSummary;
+  @SerializedName("mimeType")
+  protected String mMimeType;
+  @SerializedName("length")
+  protected long mLength = -1;
   private String charsetName;
 
-  protected transient Object content;
+  protected transient Object mContent;
 
-  protected transient byte[] data;
+  protected transient byte[] mData;
   /** The id to retrieve the attachment from server */
-  protected String attachmentId;
-
-  protected transient String downloadUrl;
+  @SerializedName("attachmentId")
+  protected String mAttachmentId;
 
   private String senderId;
 
-  private transient Map<String, String> metaData;
-
-  protected transient AttachmentService attachmentService;
+  @SerializedName("metaData")
+  private transient Map<String, String> mMetaData;
 
   /**
    * Create from a {@link File}
@@ -196,8 +206,8 @@ final public class Attachment implements Parcelable {
     if(!content.exists()) {
       throw new IllegalArgumentException("content file doesn't exist");
     }
-    this.length = content.length();
-    sourceType = ContentSourceType.FILE;
+    this.mLength = content.length();
+    mSourceType = ContentSourceType.FILE;
     create(content, mimeType, name, summary);
   }
 
@@ -223,9 +233,9 @@ final public class Attachment implements Parcelable {
     }
     validateMimeType(mimeType);
 
-    this.length = content.length;
-    sourceType = ContentSourceType.BYTE_ARRAY;
-    data = content;
+    this.mLength = content.length;
+    mSourceType = ContentSourceType.BYTE_ARRAY;
+    mData = content;
     create(content, mimeType, name, summary);
   }
 
@@ -251,7 +261,7 @@ final public class Attachment implements Parcelable {
     }
     validateMimeType(mimeType);
 
-    sourceType = ContentSourceType.INPUT_STREAM;
+    mSourceType = ContentSourceType.INPUT_STREAM;
     create(content, mimeType, name, summary);
   }
 
@@ -277,30 +287,42 @@ final public class Attachment implements Parcelable {
     }
     validateMimeType(mimeType);
 
-    this.length = content.length();
-    sourceType = ContentSourceType.TEXT;
+    this.mLength = content.length();
+    mSourceType = ContentSourceType.TEXT;
     //this.charsetName = charsetName;
     create(content, mimeType, name, description);
   }
 
+  public Attachment(Bitmap content, String mimeType) {
+    if(null == content) {
+      throw new IllegalArgumentException("content shouldn't be empty");
+    }
+
+    validateMimeType(mimeType);
+
+    this.mLength = content.getByteCount();
+    mSourceType = ContentSourceType.BITMAP;
+    create(content, mimeType, null, null);
+  }
+
   protected void create(Object content, String mimeType, String name, String description) {
-    this.content = content;
-    this.name = name;
-    this.summary = description;
-    this.mimeType = mimeType;
-    this.status = Status.INIT;
+    this.mContent = content;
+    this.mName = name;
+    this.mSummary = description;
+    this.mMimeType = mimeType;
+    this.mStatus = Status.INIT;
     this.senderId = User.getCurrentUserId();
   }
 
   private byte[] getAsBytes() {
-    if(null == data && null != content) {
-      data = convertToBytes();
-      if(null != data) {
-        length = data.length;
+    if(null == mData && null != mContent) {
+      mData = convertToBytes();
+      if(null != mData) {
+        mLength = mData.length;
       }
     }
 
-    return data;
+    return mData;
   }
 
   /**
@@ -308,11 +330,11 @@ final public class Attachment implements Parcelable {
    * @return
    */
   public String getMimeType() {
-    return mimeType;
+    return mMimeType;
   }
 
   private Object getContent() {
-    return content;
+    return mContent;
   }
 
   /**
@@ -320,7 +342,7 @@ final public class Attachment implements Parcelable {
    * @return
    */
   public String getAttachmentId() {
-    return attachmentId;
+    return mAttachmentId;
   }
 
   /**
@@ -328,26 +350,9 @@ final public class Attachment implements Parcelable {
    * @return
    */
   public String getDownloadUrl() {
-    if(null == downloadUrl) {
-      checkIfContentAvailable();
+    checkIfContentAvailable();
 
-      if(null == ModuleManager.getUserToken()) {
-        throw new IllegalStateException("User hasn't login");
-      }
-
-      String baseUrl = MaxCore.getConfig().getBaseUrl();
-      StringBuilder urlBuilder = new StringBuilder(baseUrl);
-      if(!baseUrl.endsWith("/")) {
-        urlBuilder.append("/");
-      }
-      urlBuilder.append("com.magnet.server/file/download/").append(attachmentId)
-          .append("?access_token=").append(ModuleManager.getUserToken().getAccessToken())
-          .append("&").append("user_id=").append(getSenderId());
-
-      downloadUrl = urlBuilder.toString();
-    }
-
-    return downloadUrl;
+    return createDownloadUrl(mAttachmentId, getSenderId());
   }
 
   /**
@@ -355,10 +360,10 @@ final public class Attachment implements Parcelable {
    * @return
    */
   public Status getStatus() {
-    if(null == status) {
-      status = Status.INIT;
+    if(null == mStatus) {
+      mStatus = Status.INIT;
     }
-    return status;
+    return mStatus;
   }
 
   /**
@@ -366,7 +371,7 @@ final public class Attachment implements Parcelable {
    * @return
    */
   public String getName() {
-    return name;
+    return mName;
   }
 
   /**
@@ -374,11 +379,11 @@ final public class Attachment implements Parcelable {
    * @return
    */
   public String getSummary() {
-    return summary;
+    return mSummary;
   }
 
   private ContentSourceType getSourceType() {
-    return sourceType;
+    return mSourceType;
   }
 
   private String getCharsetName() {
@@ -390,7 +395,7 @@ final public class Attachment implements Parcelable {
    * @return
    */
   public long getLength() {
-    return length;
+    return mLength;
   }
 
   private String getSenderId() {
@@ -402,7 +407,7 @@ final public class Attachment implements Parcelable {
    * @param listener
    */
   public void upload(final UploadListener listener) {
-    if(StringUtil.isNotEmpty(attachmentId)) {
+    if(StringUtil.isNotEmpty(mAttachmentId)) {
       // Already uploaded
       Log.d(TAG, "Already uploaded");
       if(null != listener) {
@@ -411,7 +416,7 @@ final public class Attachment implements Parcelable {
       return;
     }
 
-    if(status == Status.INIT || status == Status.ERROR) {
+    if(mStatus == Status.INIT || mStatus == Status.ERROR) {
       if(null != listener) {
         listener.onStart(this);
       }
@@ -422,14 +427,14 @@ final public class Attachment implements Parcelable {
           if (response.isSuccess()) {
             String result = response.body();
             if (StringUtil.isNotEmpty(result)) {
-              attachmentId = result;
-              status = Status.COMPLETE;
-              Log.d(TAG, "It took " + (System.currentTimeMillis() - startTime.get())/1000 + " seconds to upload attachment " + attachmentId);
+              mAttachmentId = result;
+              mStatus = Status.COMPLETE;
+              Log.d(TAG, "It took " + (System.currentTimeMillis() - startTime.get())/1000 + " seconds to upload attachment " + mAttachmentId);
               if (null != listener) {
                 listener.onComplete(Attachment.this);
               }
             } else {
-              handleError(new Exception("Can't attachmentId from response"));
+              handleError(new Exception("Can't mAttachmentId from response"));
             }
           } else {
             handleError(new Exception(response.message()));
@@ -441,9 +446,9 @@ final public class Attachment implements Parcelable {
         }
 
         private void handleError(Throwable throwable) {
-          status = Status.ERROR;
+          mStatus = Status.ERROR;
           Log.d(TAG,
-              "Failed to upload attachment " + name, throwable);
+              "Failed to upload attachment " + mName, throwable);
           if (null != listener) {
             listener.onError(Attachment.this, throwable);
           }
@@ -451,17 +456,17 @@ final public class Attachment implements Parcelable {
       };
 
       RequestBody requestBody = null;
-      if(sourceType == ContentSourceType.FILE) {
-        requestBody = RequestBody.create(MediaType.parse(getMimeType()), (File) content);
+      if(mSourceType == ContentSourceType.FILE) {
+        requestBody = RequestBody.create(MediaType.parse(getMimeType()), (File) mContent);
       } else {
         requestBody = RequestBody.create(MediaType.parse(getMimeType()), getAsBytes());
       }
       startTime.set(System.currentTimeMillis());
-      getAttachmentService().upload(metaData, requestBody, uploadCallback)
+      getAttachmentService().upload(mMetaData, requestBody, uploadCallback)
           .executeInBackground();
 
-      status = Status.TRANSFERING;
-    } else if(status == Status.TRANSFERING) {
+      mStatus = Status.TRANSFERING;
+    } else if(mStatus == Status.TRANSFERING) {
       throw new IllegalStateException("Attachment is being uploading");
     }
   }
@@ -540,18 +545,18 @@ final public class Attachment implements Parcelable {
       throw new IllegalArgumentException("Key shouldn't be null");
     }
 
-    if(null == metaData) {
-      metaData = new HashMap<>();
+    if(null == mMetaData) {
+      mMetaData = new HashMap<>();
     }
 
-    metaData.put(key, value);
+    mMetaData.put(key, value);
   }
 
   public void setMetaData(Map<String, String> metaData) {
     if(null != metaData) {
       metaData.clear();
     }
-    this.metaData = metaData;
+    this.mMetaData = metaData;
   }
 
   /**
@@ -575,12 +580,12 @@ final public class Attachment implements Parcelable {
     }
 
     Attachment theOther = (Attachment) obj;
-    return StringUtil.isStringValueEqual(attachmentId, theOther.getAttachmentId()) &&
-        StringUtil.isStringValueEqual(name, theOther.getName()) &&
-        StringUtil.isStringValueEqual(mimeType, theOther.getMimeType()) &&
-        status == theOther.getStatus() &&
-        length == theOther.getLength() &&
-        sourceType == theOther.getSourceType();
+    return StringUtil.isStringValueEqual(mAttachmentId, theOther.getAttachmentId()) &&
+        StringUtil.isStringValueEqual(mName, theOther.getName()) &&
+        StringUtil.isStringValueEqual(mMimeType, theOther.getMimeType()) &&
+        mStatus == theOther.getStatus() &&
+        mLength == theOther.getLength() &&
+        mSourceType == theOther.getSourceType();
   }
 
   /**
@@ -590,49 +595,99 @@ final public class Attachment implements Parcelable {
    */
   @Override
   public int hashCode() {
-    return new HashCodeBuilder().hash(attachmentId).hash(name).hash(mimeType)
-        .hash(status).hash(length).hash(sourceType).hashCode();
+    return new HashCodeBuilder().hash(mAttachmentId).hash(mName).hash(mMimeType)
+        .hash(mStatus).hash(mLength).hash(mSourceType).hashCode();
   }
 
   @Override public String toString() {
     return new StringBuilder().append("{")
-        .append("attachmentId = ").append(attachmentId).append(", ")
-        .append("name = ").append(name).append(", ")
-        .append("status = ").append(status).append(", ")
-        .append("sourceType = ").append(sourceType).append(", ")
-        .append("mimeType = ").append(mimeType).append(", ")
-        .append("length = ").append(length).append(", ")
-        .append("metaData = ").append(StringUtil.toString(metaData))
+        .append("attachmentId = ").append(mAttachmentId).append(", ")
+        .append("name = ").append(mName).append(", ")
+        .append("status = ").append(mStatus).append(", ")
+        .append("sourceType = ").append(mSourceType).append(", ")
+        .append("mimeType = ").append(mMimeType).append(", ")
+        .append("length = ").append(mLength).append(", ")
+        .append("metaData = ").append(StringUtil.toString(mMetaData))
         .append("}")
         .toString();
   }
 
-  protected AttachmentService getAttachmentService() {
-    if(null == attachmentService) {
-      attachmentService = MaxCore.create(AttachmentService.class);
+  public static String getMimeType(String fileName, String type) {
+    if(StringUtil.isNotEmpty(fileName)) {
+      int idx = fileName.lastIndexOf(".");
+      if (idx >= 0 && idx < fileName.length() - 1) {
+        String format = fileName.substring(idx + 1);
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(format);
+      }
+    }
+    return type + "/*";
+  }
+
+  public static String createDownloadUrl(String attachmentId, String ownerId) {
+    if(null == ModuleManager.getUserToken()) {
+      throw new IllegalStateException("User hasn't login");
     }
 
-    return attachmentService;
+    String baseUrl = MaxCore.getConfig().getBaseUrl();
+    StringBuilder urlBuilder = new StringBuilder(baseUrl);
+    if(!baseUrl.endsWith("/")) {
+      urlBuilder.append("/");
+    }
+    urlBuilder.append("com.magnet.server/file/download/").append(attachmentId)
+        .append("?access_token=").append(ModuleManager.getUserToken().getAccessToken())
+        .append("&").append("user_id=").append(ownerId);
+
+    return urlBuilder.toString();
+  }
+
+  protected AttachmentService getAttachmentService() {
+    return MaxCore.create(AttachmentService.class);
   }
 
   protected byte[] convertToBytes() {
-    if(sourceType == ContentSourceType.TEXT) {
+    if(mSourceType == ContentSourceType.TEXT) {
       if(null != charsetName) {
         try {
-          return ((String) content).getBytes(charsetName);
+          return ((String) mContent).getBytes(charsetName);
         } catch (UnsupportedEncodingException e) {
           e.printStackTrace();
         }
       } else {
-        return ((String) content).getBytes();
+        return ((String) mContent).getBytes();
       }
-    } else if(sourceType == ContentSourceType.INPUT_STREAM) {
-      return convertInputStreamToBytes((InputStream) content);
-    } else if(sourceType == ContentSourceType.FILE) {
+    } else if(mSourceType == ContentSourceType.INPUT_STREAM) {
+      return convertInputStreamToBytes((InputStream) mContent);
+    } else if(mSourceType == ContentSourceType.BITMAP) {
+      Bitmap bitmap = (Bitmap) mContent;
+      ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+      Bitmap.CompressFormat compressFormat = Bitmap.CompressFormat.PNG;
+      String imageType = mMimeType.substring(mMimeType.lastIndexOf("/") + 1);
+      if("png".equalsIgnoreCase(imageType)) {
+        compressFormat = Bitmap.CompressFormat.PNG;
+      } else if("webp".equalsIgnoreCase(imageType)) {
+        compressFormat = Bitmap.CompressFormat.WEBP;
+      } else if(imageType.toLowerCase().endsWith("jpg")) {
+        compressFormat = Bitmap.CompressFormat.JPEG;
+      }
+
+      try {
+        bitmap.compress(compressFormat, 100, stream);
+        return stream.toByteArray();
+      } catch (Exception e) {
+        Log.d(TAG, "Failed to convert bitmap to byte array");
+      } finally {
+        try {
+          stream.close();
+        } catch (IOException e) {
+
+        }
+      }
+    } else if(mSourceType == ContentSourceType.FILE) {
       InputStream in = null;
       try {
-        in = new FileInputStream((File)content);
-        return convertInputStreamToBytes(new FileInputStream((File)content));
+        in = new FileInputStream((File)mContent);
+        return convertInputStreamToBytes(new FileInputStream((File)mContent));
       } catch (FileNotFoundException e) {
         Log.e(TAG, e.getLocalizedMessage());
       } finally {
@@ -670,7 +725,7 @@ final public class Attachment implements Parcelable {
   }
 
   private void checkIfContentAvailable() {
-    if(StringUtil.isEmpty(attachmentId)) {
+    if(StringUtil.isEmpty(mAttachmentId)) {
       throw new IllegalStateException("AttachmentId is not available");
     }
     if(StringUtil.isEmpty(senderId)) {
@@ -722,14 +777,14 @@ final public class Attachment implements Parcelable {
         //if (null != listener) {
         //  listener.onComplete(this);
         //}
-        status = Status.INIT;
+        mStatus = Status.INIT;
         if (null != listener) {
           listener.onStart();
         }
 
         doDownload();
 
-        status = Status.TRANSFERING;
+        mStatus = Status.TRANSFERING;
       } else if (currentStatus == Status.INIT) {
         if (null != listener) {
           listener.onStart();
@@ -737,7 +792,7 @@ final public class Attachment implements Parcelable {
 
         doDownload();
 
-        status = Status.TRANSFERING;
+        mStatus = Status.TRANSFERING;
       } else if(currentStatus == Status.INLINE) {
 
       } else if (currentStatus == Status.TRANSFERING) {
@@ -746,7 +801,7 @@ final public class Attachment implements Parcelable {
     }
 
     protected void logTime() {
-      Log.d(TAG, "It took " + (System.currentTimeMillis() - startTime)/1000 + " seconds to download attachment " + attachmentId);
+      Log.d(TAG, "It took " + (System.currentTimeMillis() - startTime)/1000 + " seconds to download attachment " + mAttachmentId);
     }
   }
 
@@ -757,15 +812,15 @@ final public class Attachment implements Parcelable {
     }
 
     @Override protected void doDownload() {
-      getAttachmentService().downloadAsBytes(attachmentId, senderId, new Callback<byte[]>() {
+      getAttachmentService().downloadAsBytes(mAttachmentId, senderId, new Callback<byte[]>() {
         @Override public void onResponse(Response<byte[]> response) {
           if (response.isSuccess()) {
-            data = response.body();
-            length = data.length;
-            status = Status.COMPLETE;
+            mData = response.body();
+            mLength = mData.length;
+            mStatus = Status.COMPLETE;
             logTime();
             if (null != listener) {
-              listener.onComplete(data);
+              listener.onComplete(mData);
             }
           } else {
             handleError(new Exception(response.message()));
@@ -777,8 +832,8 @@ final public class Attachment implements Parcelable {
         }
 
         private void handleError(Throwable throwable) {
-          status = Status.ERROR;
-          Log.d(TAG, "Failed to download attachment " + name, throwable);
+          mStatus = Status.ERROR;
+          Log.d(TAG, "Failed to download attachment " + mName, throwable);
           if (null != listener) {
             listener.onError(throwable);
           }
@@ -797,7 +852,7 @@ final public class Attachment implements Parcelable {
     }
 
     @Override protected void doDownload() {
-      getAttachmentService().downloadAsStream(attachmentId, senderId, new Callback<ResponseBody>() {
+      getAttachmentService().downloadAsStream(mAttachmentId, senderId, new Callback<ResponseBody>() {
         @Override public void onResponse(final Response<ResponseBody> response) {
           if (response.isSuccess()) {
             // Read the InputStream in AsyncTask
@@ -806,8 +861,8 @@ final public class Attachment implements Parcelable {
               @Override protected Exception doInBackground(Void... params) {
                 try {
                   writeInputStreamToFile(response.body().byteStream(), destinationFile);
-                  status = Attachment.Status.COMPLETE;
-                  length = destinationFile.length();
+                  mStatus = Attachment.Status.COMPLETE;
+                  mLength = destinationFile.length();
                   logTime();
                 } catch (IOException e) {
                   return e;
@@ -866,8 +921,8 @@ final public class Attachment implements Parcelable {
         }
 
         private void handleError(Throwable throwable) {
-          status = Status.ERROR;
-          Log.d(TAG, "Failed to download attachment " + name + " to file " + destinationFile.getAbsolutePath(), throwable);
+          mStatus = Status.ERROR;
+          Log.d(TAG, "Failed to download attachment " + mName + " to file " + destinationFile.getAbsolutePath(), throwable);
           if (null != listener) {
             listener.onError(throwable);
           }
@@ -883,12 +938,12 @@ final public class Attachment implements Parcelable {
     }
 
     @Override protected void doDownload() {
-      getAttachmentService().downloadAsStream(attachmentId, senderId, new Callback<ResponseBody>() {
+      getAttachmentService().downloadAsStream(mAttachmentId, senderId, new Callback<ResponseBody>() {
         @Override public void onResponse(Response<ResponseBody> response) {
           if (response.isSuccess()) {
-            status = Status.COMPLETE;
+            mStatus = Status.COMPLETE;
             try {
-              length = response.body().contentLength();
+              mLength = response.body().contentLength();
               logTime();
               if (null != listener) {
                 listener.onComplete(response.body().byteStream());
@@ -907,8 +962,8 @@ final public class Attachment implements Parcelable {
         }
 
         private void handleError(Throwable throwable) {
-          status = Status.ERROR;
-          Log.d(TAG, "Failed to download attachment " + name + " to stream ", throwable);
+          mStatus = Status.ERROR;
+          Log.d(TAG, "Failed to download attachment " + mName + " to stream ", throwable);
           if (null != listener) {
             listener.onError(throwable);
           }
@@ -924,36 +979,34 @@ final public class Attachment implements Parcelable {
   }
 
   @Override public void writeToParcel(Parcel dest, int flags) {
-    dest.writeInt(this.status == null ? -1 : this.status.ordinal());
-    dest.writeInt(this.sourceType == null ? -1 : this.sourceType.ordinal());
-    dest.writeString(this.name);
-    dest.writeString(this.summary);
-    dest.writeString(this.mimeType);
-    dest.writeLong(this.length);
+    dest.writeInt(this.mStatus == null ? -1 : this.mStatus.ordinal());
+    dest.writeInt(this.mSourceType == null ? -1 : this.mSourceType.ordinal());
+    dest.writeString(this.mName);
+    dest.writeString(this.mSummary);
+    dest.writeString(this.mMimeType);
+    dest.writeLong(this.mLength);
     dest.writeString(this.charsetName);
-    dest.writeByteArray(this.data);
-    dest.writeString(this.attachmentId);
-    dest.writeString(this.downloadUrl);
+    dest.writeByteArray(this.mData);
+    dest.writeString(this.mAttachmentId);
     dest.writeString(this.senderId);
-    dest.writeBundle(ParcelableHelper.stringMapToBundle(this.metaData));
+    dest.writeBundle(ParcelableHelper.stringMapToBundle(this.mMetaData));
   }
 
   protected Attachment(Parcel in) {
     int tmpStatus = in.readInt();
-    this.status = tmpStatus == -1 ? null : Status.values()[tmpStatus];
+    this.mStatus = tmpStatus == -1 ? null : Status.values()[tmpStatus];
     int tmpSourceType = in.readInt();
-    this.sourceType = tmpSourceType == -1 ? null : ContentSourceType.values()[tmpSourceType];
-    this.name = in.readString();
-    this.summary = in.readString();
-    this.mimeType = in.readString();
-    this.length = in.readLong();
+    this.mSourceType = tmpSourceType == -1 ? null : ContentSourceType.values()[tmpSourceType];
+    this.mName = in.readString();
+    this.mSummary = in.readString();
+    this.mMimeType = in.readString();
+    this.mLength = in.readLong();
     this.charsetName = in.readString();
-    this.content = in.readParcelable(Object.class.getClassLoader());
-    this.data = in.createByteArray();
-    this.attachmentId = in.readString();
-    this.downloadUrl = in.readString();
+    this.mContent = in.readParcelable(Object.class.getClassLoader());
+    this.mData = in.createByteArray();
+    this.mAttachmentId = in.readString();
     this.senderId = in.readString();
-    this.metaData = ParcelableHelper.stringMapfromBundle(in.readBundle(getClass().getClassLoader()));
+    this.mMetaData = ParcelableHelper.stringMapfromBundle(in.readBundle(getClass().getClassLoader()));
   }
 
   protected Attachment() {

@@ -134,6 +134,7 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
 
   private MagnetRestAdapter(OkHttpClient client, BaseUrl baseUrl, List<Converter.Factory> converterFactories,
       /*List<CallAdapter.Factory> adapterFactories,*/ Executor callbackExecutor) {
+    Log.d(TAG, "MagnetRestAdapter is created");
     this.client = client;
     this.baseUrl = baseUrl;
     this.converterFactories = converterFactories;
@@ -179,7 +180,8 @@ public class MagnetRestAdapter implements MaxModule, AuthTokenProvider {
     mAppToken.set(appToken);
     mDeviceId.set(deviceId);
 
-    if(isEmptyBeforeUpdate) {
+    if(isEmptyBeforeUpdate && StringUtil.isNotEmpty(appToken)) {
+      Log.i(TAG, "app token become available, sending pending queue");
       requestManager.resendPendingCallsForToken();
     }
 

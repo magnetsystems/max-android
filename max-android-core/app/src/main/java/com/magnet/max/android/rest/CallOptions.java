@@ -43,4 +43,10 @@ public class CallOptions {
   public ReliableCallOptions getReliableCallOptions() {
     return reliableCallOptions;
   }
+
+  @Override
+  public String toString() {
+    return new StringBuilder("CallOptions{").append("cacheOptions = ").append(cacheOptions).append(",")
+        .append("reliableCallOptions = ").append(reliableCallOptions).append(" }").toString();
+  }
 }

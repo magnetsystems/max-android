@@ -17,6 +17,7 @@ package com.magnet.max.android.auth.model;
 
 import java.util.Map;
 import java.util.UUID;
+import com.google.gson.annotations.SerializedName;
 
 /**
  * This class is used to register a new user
@@ -32,6 +33,7 @@ public class UserRegistrationInfo {
   private String firstName;
   private String lastName;
   private String[] tags;
+  @SerializedName("userAccountData")
   private java.util.Map<String, String> extras;
 
   private UserRegistrationInfo() {

@@ -51,6 +51,8 @@ public class RequestManager implements ConnectivityListener {
   //private final Context applicationContext;
 
   public RequestManager(OkHttpClient client) {
+    Log.d(TAG, "RequestManager is created, pendingCallsWaitingForToken : " + System.identityHashCode(pendingCallsWaitingForToken));
+
     this.client = client;
     //this.applicationContext = applicationContext;
 
@@ -109,11 +111,14 @@ public class RequestManager implements ConnectivityListener {
   public void savePendingCall(retrofit.Call call, retrofit.Callback callback,
       CallOptions options) {
     pendingCallsWaitingForToken.add(new RequestInfo(call, callback, options));
+    logQueueSize();
   }
 
   public synchronized void resendPendingCallsForToken() {
+    logQueueSize();
     while(pendingCallsWaitingForToken.size() > 0) {
       RequestInfo ri = pendingCallsWaitingForToken.pop();
+      Log.d(TAG, "Sending pending request : " + ri);
       ri.getCall().enqueue(ri.getCallback());
     }
   }
@@ -125,9 +130,11 @@ public class RequestManager implements ConnectivityListener {
       Request request = e.getRequest().toRequest();
       if(!options.isExpired()) {
         if(options.evaluateConditions(true)) {
+          Log.d(TAG, "-----Resending reliable call " + request);
           client.newCall(request).enqueue(commonOkHttpCallback);
         }
       } else {
+        Log.d(TAG, "-----Reliable request " + request + " expired");
         expiredRequests.add(request);
       }
     }
@@ -164,6 +171,12 @@ public class RequestManager implements ConnectivityListener {
     }
   }
 
+  private void logQueueSize() {
+    Log.d(TAG, "There is " + pendingCallsWaitingForToken.size() + " pending requests in the queue "
+        +  System.identityHashCode(pendingCallsWaitingForToken) + " : "
+        + pendingCallsWaitingForToken);
+  }
+
   private static class RequestInfo {
     private final Request request;
     private final retrofit.Call call;
@@ -195,6 +208,15 @@ public class RequestManager implements ConnectivityListener {
 
     public CallOptions getOptions() {
       return options;
+    }
+
+    @Override
+    public String toString() {
+      return new StringBuilder("RequestInfo {")
+          .append("request = ").append(request).append(",")
+          .append("call = ").append(call).append(",")
+          .append("callOptions = ").append(options).append(",")
+          .append("callback = ").append(callback).append(",").toString();
     }
   }
 }
