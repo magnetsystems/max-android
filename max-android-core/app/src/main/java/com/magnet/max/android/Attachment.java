@@ -632,7 +632,9 @@ final public class Attachment implements Parcelable {
 
   public static String createDownloadUrl(String attachmentId, String ownerId) {
     if(null == ModuleManager.getUserToken()) {
-      throw new IllegalStateException("User hasn't login");
+      Throwable throwable = new IllegalStateException("User token is not available");
+      Log.e(TAG, "User token is not available when generating download url. ", throwable);
+      return null;
     }
 
     String baseUrl = MaxCore.getConfig().getBaseUrl();
