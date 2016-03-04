@@ -42,7 +42,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -53,6 +52,8 @@ import retrofit.Response;
  * Attachment is used to save/download large content (such as file) to/from Max server.
  */
 final public class Attachment implements Parcelable {
+
+  private static final String CONTENT_SHOULD_NOT_BE_EMPTY = "content shouldn't be empty";
 
   /**
    * Status of the attachment
@@ -203,7 +204,7 @@ final public class Attachment implements Parcelable {
    */
   public Attachment(File content, String mimeType, String name, String summary) {
     if(null == content) {
-      throw new IllegalArgumentException("content shouldn't be null");
+      throw new IllegalArgumentException(CONTENT_SHOULD_NOT_BE_EMPTY);
     }
     if(!content.exists()) {
       throw new IllegalArgumentException("content file doesn't exist");
@@ -231,7 +232,7 @@ final public class Attachment implements Parcelable {
    */
   public Attachment(byte[] content, String mimeType, String name, String summary) {
     if(null == content || content.length == 0) {
-      throw new IllegalArgumentException("content shouldn't be empty");
+      throw new IllegalArgumentException(CONTENT_SHOULD_NOT_BE_EMPTY);
     }
     validateMimeType(mimeType);
 
@@ -259,7 +260,7 @@ final public class Attachment implements Parcelable {
    */
   public Attachment(InputStream content, String mimeType, String name, String summary) {
     if(null == content) {
-      throw new IllegalArgumentException("content shouldn't be null");
+      throw new IllegalArgumentException(CONTENT_SHOULD_NOT_BE_EMPTY);
     }
     validateMimeType(mimeType);
 
@@ -285,7 +286,7 @@ final public class Attachment implements Parcelable {
    */
   public Attachment(String content, String mimeType, /**String charsetName,**/ String name, String description) {
     if(StringUtil.isEmpty(content)) {
-      throw new IllegalArgumentException("content shouldn't be empty");
+      throw new IllegalArgumentException(CONTENT_SHOULD_NOT_BE_EMPTY);
     }
     validateMimeType(mimeType);
 
@@ -297,7 +298,7 @@ final public class Attachment implements Parcelable {
 
   public Attachment(Bitmap content, String mimeType) {
     if(null == content) {
-      throw new IllegalArgumentException("content shouldn't be empty");
+      throw new IllegalArgumentException(CONTENT_SHOULD_NOT_BE_EMPTY);
     }
 
     validateMimeType(mimeType);
@@ -476,7 +477,9 @@ final public class Attachment implements Parcelable {
 
       mStatus = Status.TRANSFERING;
     } else if(mStatus == Status.TRANSFERING) {
-      throw new IllegalStateException("Attachment is being uploading");
+      if(null != listener) {
+        listener.onError(this, new IllegalStateException("Attachment is being uploading"));
+      }
     }
   }
 
@@ -498,7 +501,11 @@ final public class Attachment implements Parcelable {
    */
   public void download(String destinationFilePath, DownloadAsFileListener listener) {
     if(StringUtil.isEmpty(destinationFilePath)) {
-      throw new IllegalArgumentException("destinationFilePath shouldn't be null");
+      if(null != listener) {
+        listener.onError(new IllegalArgumentException("destinationFilePath shouldn't be null"));
+      }
+
+      return;
     }
     download(new File(destinationFilePath), listener);
   }
@@ -533,7 +540,9 @@ final public class Attachment implements Parcelable {
       File destinationFile = new File(dir, UUID.randomUUID().toString());
       download(destinationFile, listener);
     } else {
-      throw new IllegalStateException("Can't get local dir to download attachment");
+      if(null != listener) {
+        listener.onError(new IllegalStateException("Can't get local dir to download attachment"));
+      }
     }
   }
 
@@ -555,7 +564,9 @@ final public class Attachment implements Parcelable {
    */
   public void addMetaData(String key, String value) {
     if(StringUtil.isEmpty(key)) {
-      throw new IllegalArgumentException("Key shouldn't be null");
+      Log.e(TAG, "addMetaData : key shouldn't be null");
+
+      return;
     }
 
     if(null == mMetaData) {
@@ -822,7 +833,9 @@ final public class Attachment implements Parcelable {
       } else if(currentStatus == Status.INLINE) {
 
       } else if (currentStatus == Status.TRANSFERING) {
-        throw new IllegalStateException("Attachment is downloading");
+        if (null != listener) {
+          listener.onError(new IllegalStateException("Attachment is downloading"));
+        }
       }
     }
 
