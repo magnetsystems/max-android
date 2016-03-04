@@ -761,7 +761,7 @@ final public class Attachment implements Parcelable {
       Log.e(TAG, "checkIfContentAvailable : " + errorMessage);
 
       if(null != listener) {
-        listener.onError(new Exception(errorMessage));
+        listener.onError(new IllegalStateException(errorMessage));
       }
 
       return false;
