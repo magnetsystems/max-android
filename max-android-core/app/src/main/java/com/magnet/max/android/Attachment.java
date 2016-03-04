@@ -638,8 +638,7 @@ final public class Attachment implements Parcelable {
 
   public static String createDownloadUrl(String attachmentId, String ownerId) {
     if(null == ModuleManager.getUserToken()) {
-      Throwable throwable = new IllegalStateException("User token is not available");
-      Log.e(TAG, "User token is not available when generating download url. ", throwable);
+      Log.e(TAG, "createDownloadUrl : User token is not available when generating download url. ");
       return null;
     }
 
