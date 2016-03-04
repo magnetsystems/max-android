@@ -352,9 +352,11 @@ final public class Attachment implements Parcelable {
    * @return
    */
   public String getDownloadUrl() {
-    checkIfContentAvailable();
-
-    return createDownloadUrl(mAttachmentId, getSenderId());
+    if(checkIfContentAvailable(null)) {
+      return createDownloadUrl(mAttachmentId, getSenderId());
+    } else {
+      return null;
+    }
   }
 
   /**
@@ -483,10 +485,10 @@ final public class Attachment implements Parcelable {
    * @param listener
    */
   public void download(DownloadAsBytesListener listener) {
-    checkIfContentAvailable();
-
-    AbstractDownloader downloader = new BytesDownloader(listener);
-    downloader.download();
+    if(checkIfContentAvailable(listener)) {
+      AbstractDownloader downloader = new BytesDownloader(listener);
+      downloader.download();
+    }
   }
 
   /**
@@ -508,13 +510,17 @@ final public class Attachment implements Parcelable {
    */
   public void download(File destinationFile, DownloadAsFileListener listener) {
     if(null == destinationFile) {
-      throw new IllegalArgumentException("destinationFile shouldn't be null");
+      if(null != listener) {
+        listener.onError(new IllegalArgumentException("destinationFile shouldn't be null"));
+      }
+
+      return;
     }
 
-    checkIfContentAvailable();
-
-    AbstractDownloader downloader = new FileDownloader(destinationFile, listener);
-    downloader.download();
+    if(checkIfContentAvailable(listener)) {
+      AbstractDownloader downloader = new FileDownloader(destinationFile, listener);
+      downloader.download();
+    }
   }
 
   /**
@@ -536,10 +542,10 @@ final public class Attachment implements Parcelable {
    * @param listener
    */
   public void download(DownloadAsStreamListener listener) {
-    checkIfContentAvailable();
-
-    AbstractDownloader downloader = new StreamDownloader(listener);
-    downloader.download();
+    if(checkIfContentAvailable(listener)) {
+      AbstractDownloader downloader = new StreamDownloader(listener);
+      downloader.download();
+    }
   }
 
   /**
@@ -733,13 +739,25 @@ final public class Attachment implements Parcelable {
     return null;
   }
 
-  private void checkIfContentAvailable() {
+  private boolean checkIfContentAvailable(AbstractDownloadListener listener) {
+    String errorMessage = null;
     if(StringUtil.isEmpty(mAttachmentId)) {
-      throw new IllegalStateException("AttachmentId is not available");
+      errorMessage = "AttachmentId is not available";
+    } else if(StringUtil.isEmpty(senderId)) {
+      errorMessage = "SenderId shouldn't be null";
     }
-    if(StringUtil.isEmpty(senderId)) {
-      throw new IllegalStateException("SenderId shouldn't be null");
+
+    if(null != errorMessage) {
+      Log.e(TAG, "checkIfContentAvailable : " + errorMessage);
+
+      if(null != listener) {
+        listener.onError(new Exception(errorMessage));
+      }
+
+      return false;
     }
+
+    return true;
   }
 
   private static File getDefaultDownloadDir() {
