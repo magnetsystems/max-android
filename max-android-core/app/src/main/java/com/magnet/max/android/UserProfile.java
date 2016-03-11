@@ -154,6 +154,11 @@ public class UserProfile implements Parcelable {
       toBuild = new UserProfile();
     }
 
+    public Builder identifier(String value) {
+      toBuild.mUserIdentifier = value;
+      return this;
+    }
+
     public Builder firstName(String value) {
       toBuild.mFirstName = value;
       return this;
@@ -175,6 +180,9 @@ public class UserProfile implements Parcelable {
     }
 
     public UserProfile build() {
+      if(null == toBuild.mUserIdentifier) {
+        throw new IllegalArgumentException("userIdentifier should not be null");
+      }
       return toBuild;
     }
   }
