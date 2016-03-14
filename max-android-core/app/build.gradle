@@ -290,6 +290,8 @@ def sdkAarfile = file("${projectDir}/build/outputs/aar/${archivesBaseName}-${ver
 
 artifacts {
     archives sdkAarfile
+    archives sourcesJar
+    archives androidJavadocsJar
 }
 
 def homeDir = System.getenv('HOME')
