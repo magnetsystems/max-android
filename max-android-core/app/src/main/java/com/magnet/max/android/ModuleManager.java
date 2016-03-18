@@ -313,6 +313,10 @@ import java.util.concurrent.atomic.AtomicReference;
     return mCachedUserRef.get();
   }
 
+  public static void setCachedUser(User user) {
+    mCachedUserRef.set(user);
+  }
+
   /**
    * Send local broadcast for authentication challenge
    * @param action
