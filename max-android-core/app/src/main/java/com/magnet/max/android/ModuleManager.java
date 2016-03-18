@@ -315,6 +315,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
   public static void setCachedUser(User user) {
     mCachedUserRef.set(user);
+    mTokenLocalStore.updateForUserLogin();
   }
 
   /**
