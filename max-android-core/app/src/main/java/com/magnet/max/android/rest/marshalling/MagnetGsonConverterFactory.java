@@ -27,31 +27,32 @@ public class MagnetGsonConverterFactory implements Converter.Factory {
    * decoding from JSON (when no charset is specified by a header) will use UTF-8.
    */
   public static MagnetGsonConverterFactory create() {
-    return create(null);
+    //return create(null);
+    return new MagnetGsonConverterFactory();
   }
 
   /**
    * Create an instance using {@code gson} for conversion. Encoding to JSON and
    * decoding from JSON (when no charset is specified by a header) will use UTF-8.
    */
-  public static MagnetGsonConverterFactory create(Gson gson) {
-    return new MagnetGsonConverterFactory(gson);
-  }
-
-  private final Gson gson;
-
-  private MagnetGsonConverterFactory(Gson gson) {
-    if (gson == null) {
-      gson = new GsonBuilder()
-          .setDateFormat(Iso8601DateConverter.ISO8601DateFormat_WITH_MS)
-              //.registerTypeAdapter(Date.class, new DateTypeAdapter())
-          .create();
-    };
-    this.gson = gson;
-  }
+  //public static MagnetGsonConverterFactory create(Gson gson) {
+  //  return new MagnetGsonConverterFactory(gson);
+  //}
+  //
+  //private final Gson gson;
+  //
+  //private MagnetGsonConverterFactory(Gson gson) {
+  //  if (gson == null) {
+  //    gson = new GsonBuilder()
+  //        .setDateFormat(Iso8601DateConverter.ISO8601DateFormat_WITH_MS)
+  //            //.registerTypeAdapter(Date.class, new DateTypeAdapter())
+  //        .create();
+  //  };
+  //  this.gson = gson;
+  //}
 
   @Override public Converter<?> get(Type type) {
     TypeToken typeToken = TypeToken.get(type);
-    return new MagnetGsonConverter<>(gson, typeToken);
+    return new MagnetGsonConverter<>(typeToken);
   }
 }

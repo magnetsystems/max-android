@@ -144,4 +144,46 @@ public class UserProfile implements Parcelable {
         }
       };
 
+  /**
+   * Builder for UserProfile
+   */
+  public static class Builder {
+    private UserProfile toBuild;
+
+    public Builder() {
+      toBuild = new UserProfile();
+    }
+
+    public Builder identifier(String value) {
+      toBuild.mUserIdentifier = value;
+      return this;
+    }
+
+    public Builder firstName(String value) {
+      toBuild.mFirstName = value;
+      return this;
+    }
+
+    public Builder lastName(String value) {
+      toBuild.mLastName = value;
+      return this;
+    }
+
+    public Builder displayName(String value) {
+      toBuild.mDisplayName = value;
+      return this;
+    }
+
+    public Builder hasAvatar(Boolean value) {
+      toBuild.mHasAvatar = value;
+      return this;
+    }
+
+    public UserProfile build() {
+      if(null == toBuild.mUserIdentifier) {
+        throw new IllegalArgumentException("userIdentifier should not be null");
+      }
+      return toBuild;
+    }
+  }
 }

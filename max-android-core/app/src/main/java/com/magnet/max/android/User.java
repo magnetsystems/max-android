@@ -395,7 +395,9 @@ final public class User extends UserProfile {
     MagnetCall<User> call = getUserService().updateProfile(updateProfileRequest, new Callback<User>() {
       @Override public void onResponse(Response<User> response) {
         if (response.isSuccess()) {
-          sCurrentUserRef.set(response.body());
+          User user = response.body();
+          sCurrentUserRef.set(user);
+          ModuleManager.setCachedUser(user);
         }
 
         ApiCallbackHelper.executeCallback(callback, response);

@@ -44,16 +44,13 @@ public class MagnetGsonConverter<T> implements Converter<T> {
 
   private final TypeToken<T> typeToken;
 
-  private final Gson gson;
-
-  public MagnetGsonConverter(Gson gson, TypeToken<T> typeToken) {
-    this.gson = gson;
+  public MagnetGsonConverter(TypeToken<T> typeToken) {
     this.typeToken = typeToken;
   }
 
 
   @Override public T fromBody(ResponseBody responseBody) throws IOException {
-    if(isVoidType(typeToken.getType())) {
+    if(GsonDecorator.getInstance().isVoidType(typeToken.getType())) {
       return null;
     }
 
@@ -61,7 +58,7 @@ public class MagnetGsonConverter<T> implements Converter<T> {
       return (T) responseBody;
     }
 
-    if(isByteArray()) {
+    if(GsonDecorator.getInstance().isByteArray(typeToken)) {
       return (T) responseBody.bytes();
     }
 
@@ -70,12 +67,12 @@ public class MagnetGsonConverter<T> implements Converter<T> {
     //  charset = responseBody.contentType().charset(charset);
     //}
 
-    if(isBasicType(typeToken.getType()) || isDateType(typeToken.getType()) || isEnum(typeToken.getType())) {
-      return unmarshalBasicType(responseBody, typeToken.getType());
+    if(GsonDecorator.getInstance().isSimpleType(typeToken)) {
+      return (T) GsonDecorator.getInstance().unmarshalSimpleType(responseBody.string(), typeToken.getType());
     } else {
       Reader in = responseBody.charStream();
       try {
-        return gson.fromJson(responseBody.charStream(), typeToken.getType()); //typeAdapter.fromJson(in);
+        return (T) GsonDecorator.getInstance().fromJson(responseBody.charStream(), typeToken); //typeAdapter.fromJson(in);
       } catch (Exception e) {
         Log.e(TAG, "Error in fromBody \n" + e.getMessage());
         throw e;
@@ -89,24 +86,16 @@ public class MagnetGsonConverter<T> implements Converter<T> {
   }
 
   @Override public RequestBody toBody(T value) {
-    String json = null;
     MediaType mediaType = null;
-    if(isBasicType(typeToken.getType())) {
-      json = marshalBasicType(value, typeToken.getType());
+    if(GsonDecorator.getInstance().isBasicType(typeToken.getType())) {
       mediaType = MEDIA_TYPE_TEXT;
-    } else if(isDateType(typeToken.getType())) {
-      json = Iso8601DateConverter.toString((Date) value);
-      mediaType = MEDIA_TYPE_JSON;
-    } else if(isEnum(typeToken.getType())) {
-      json = marshalBasicType(value, typeToken.getType());
+    } else if(GsonDecorator.getInstance().isDateType(typeToken.getType()) ||
+        GsonDecorator.getInstance().isEnum(typeToken.getType())) {
       mediaType = MEDIA_TYPE_JSON;
     } else if(value instanceof RequestBody) {
       return (RequestBody) value;
     } else {
       mediaType = MEDIA_TYPE_JSON;
-
-      json = gson.toJson(value);
-
       //Buffer buffer = new Buffer();
       //Writer writer = new OutputStreamWriter(buffer.outputStream(), UTF_8);
       //try {
@@ -117,112 +106,9 @@ public class MagnetGsonConverter<T> implements Converter<T> {
       //  throw new AssertionError(e); // Writing to Buffer does no I/O.
       //}
     }
-    return RequestBody.create(mediaType, json);
+    return RequestBody.create(mediaType, GsonDecorator.getInstance().toJson(value));
   }
 
-  private boolean isBasicType(Type type) {
-    if(type instanceof Class) {
-      Class clazz = (Class) type;
-      if(TypeUtil.isPrimitiveOrWrapper(clazz) ||
-         clazz.equals(String.class)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  private boolean isDateType(Type type) {
-    if(type instanceof Class) {
-      Class clazz = (Class) type;
-      if(clazz.equals(Date.class)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  private boolean isEnum(Type type) {
-    if(type instanceof Class) {
-      Class clazz = (Class) type;
-      return clazz.isEnum();
-    }
-
-    return false;
-  }
-
-  private boolean isVoidType(Type type) {
-    if(type instanceof Class) {
-      Class clazz = (Class) type;
-      if(clazz.equals(Void.class)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  private boolean isByteArray() {
-    //if(typeToken.getRawType().isArray()) {
-    //  //typeToken.getRawType().
-    //  TypeToken tt = new TypeToken<byte[]>() {};
-    //}
-    //
-    //return false;
-
-    return BYTE_ARRAY_TYPE_TOKEN.equals(typeToken);
-  }
-
-  private T unmarshalBasicType(ResponseBody responseBody, Type type) {
-    //Object result = null;
-    String str = null; //readerToString(reader);
-    try {
-      str = responseBody.string();
-    } catch (IOException e) {
-      Log.e(TAG, "Failed to parse body to string");
-      return null;
-    }
-    Log.d(TAG, "unmarshalBasicType : " + str);
-    if(type instanceof Class) {
-      Class clazz = (Class) type;
-      if(String.class.equals(clazz)) {
-        return (T) str;
-      } else if(Date.class.equals(clazz)) {
-        return (T) Iso8601DateConverter.fromString(str);
-      } else if(Boolean.class.equals(clazz)) {
-        return (T) Boolean.valueOf(str);
-      } else if(isEnum(type)) {
-        str = MagnetUtils.trimQuotes(str);
-        for(Object o : clazz.getEnumConstants()) {
-          Log.e(TAG, "enum value " + o.toString() +  " for type + " + type);
-          if(str.equals(o.toString())) {
-            return (T) o;
-          }
-        }
-        Log.e(TAG, "Failed to unmarshal enum value " + str +  " for type + " + type);
-        return null;
-      }
-    }
-
-    try {
-      return gson.fromJson(str, type);
-    } catch (Exception e) {
-      Log.e(TAG, "Failed to unmarshal type " + type + " due to \n" + e.getMessage());
-    }
-
-    return null;
-  }
-
-  private String marshalBasicType(Object object, Type type) {
-    if(type instanceof Class) {
-      Class clazz = (Class) type;
-      if(Date.class.equals(clazz)) {
-        return Iso8601DateConverter.toString((Date) object);
-      }
-    }
-    return null != object ? object.toString() : null;
-  }
 
   private String readerToString(Reader ir) {
     try {

@@ -132,7 +132,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
   public static synchronized void deRegister(MaxModule module, ApiCallback<Boolean> callback) {
     if(null == module) {
-      throw new IllegalArgumentException("module shouldn't be null");
+      Log.e(TAG, "module shouldn't be null");
+      return;
     }
 
     Log.d(TAG, "--------deRegister module " + module.getName() + " : " + module);
@@ -310,6 +311,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
   public static User getCachedUser() {
     return mCachedUserRef.get();
+  }
+
+  public static void setCachedUser(User user) {
+    mCachedUserRef.set(user);
+    mTokenLocalStore.updateForUserLogin();
   }
 
   /**
